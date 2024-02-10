@@ -153,7 +153,8 @@ class Parser:
 
         TODO: Not fully implemented.
         """
-        return False
+        return self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.LSQUAREBRACKET) or self.check(TokenKind.NONE) or self.check(TokenKind.TRUE) or self.check(TokenKind.FALSE) or self.check(TokenKind.INTEGER) or self.check(TokenKind.STRING)
+
 
     def is_stmt_first_set(self) -> bool:
         """
@@ -162,7 +163,6 @@ class Parser:
         TODO: Not fully implemented.
         """
         return (self.is_expr_first_set() or self.check(TokenKind.PASS))
-
     def parse_stmt_seq(self) -> List[Operation]:
         """Parse a sequence of statements.
 
@@ -200,5 +200,28 @@ class Parser:
         TODO: Not fully implemented.
         :return: Statement as operation
         """
-        self.match(TokenKind.PASS)
+        if self.is_expr_first_set():
+            return self.parse_literal()
+
+        elif self.check(TokenKind.PASS):
+            self.match(TokenKind.PASS)
         return ast.Pass()
+
+    def parse_literal(self) -> ast.Literal:
+
+        if self.check(TokenKind.NONE):
+            self.match(TokenKind.NONE)
+            return ast.Literal(None)
+        if self.check(TokenKind.TRUE):
+            self.match(TokenKind.TRUE)
+            return ast.Literal(True)
+        if self.check(TokenKind.FALSE):
+            self.match(TokenKind.FALSE)
+            return ast.Literal(False)
+        if self.check(TokenKind.STRING):
+            token: Token = self.match(TokenKind.STRING)
+            return ast.Literal(token.value)
+
+        if self.check(TokenKind.INTEGER):
+            token: Token = self.match(TokenKind.INTEGER)
+            return ast.Literal(token.value)
