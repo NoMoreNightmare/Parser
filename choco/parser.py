@@ -223,11 +223,29 @@ class Parser:
             self.match(TokenKind.NEWLINE)
             return simple_stmt
         elif self.check(TokenKind.IF):
-            pass
+            self.match(TokenKind.IF)
+            condition = self.parse_expr()
+            self.match(TokenKind.COLON)
+            then = self.parse_block()
+            orelse = []
+            if self.check(TokenKind.ELIF) or self.check(TokenKind.ELSE):
+                orelse = self.parse_multi_elif_and_else_opt()
+            return ast.If(condition, then, orelse)
         elif self.check(TokenKind.WHILE):
-            pass
+            self.match(TokenKind.WHILE)
+            condition = self.parse_expr()
+            self.match(TokenKind.COLON)
+            body = self.parse_block()
+            return ast.While(condition, body)
         elif self.check(TokenKind.FOR):
-            pass
+            self.match(TokenKind.FOR)
+            iter_name = self.match(TokenKind.IDENTIFIER)
+            self.match(TokenKind.IN)
+            iter_range = self.parse_expr()
+            self.match(TokenKind.COLON)
+            body = self.parse_block()
+            value = ast.For(iter_name.value, iter_range, body)
+            return value
 
     def parse_simple_stmt(self) -> Operation:
         """Parse a simple statement.
@@ -444,9 +462,13 @@ class Parser:
             value = ast.ListExpr(operations)
 
         elif self.check(TokenKind.LROUNDBRACKET):
-            pass
+            self.match(TokenKind.LROUNDBRACKET)
+            value = self.parse_expr()
+            self.match(TokenKind.RROUNDBRACKET)
         elif self.check(TokenKind.MINUS):
-            pass
+            minus = self.match(TokenKind.MINUS)
+            operation = self.parse_cexpr()
+            value = ast.UnaryExpr(minus.value, operation)
 
         if self.check(TokenKind.LSQUAREBRACKET):
             lists = self.parse_cexpr_fourth()
@@ -489,6 +511,35 @@ class Parser:
             return lists
         else:
             return [operation]
+
+    def parse_block(self) -> List[Operation]:
+        self.match(TokenKind.NEWLINE)
+        self.match(TokenKind.INDENT)
+        lists = self.parse_stmt_pos()
+        self.match(TokenKind.DEDENT)
+
+        return lists
+
+    def parse_multi_elif_and_else_opt(self) -> List[Operation]:
+        return self.parse_multi_elif_and_else_opt_helper()
+
+    def parse_multi_elif_and_else_opt_helper(self) -> List[Operation]:
+        if self.check(TokenKind.ELIF):
+            self.match(TokenKind.ELIF)
+            condition = self.parse_expr()
+            self.match(TokenKind.COLON)
+            then = self.parse_block()
+            orelse = self.parse_multi_elif_and_else_opt_helper()
+            return [ast.If(condition, then, orelse)]
+        elif self.check(TokenKind.ELSE):
+            self.match(TokenKind.ELSE)
+            self.match(TokenKind.COLON)
+            orelse = self.parse_block()
+            return orelse
+        else:
+            return []
+
+
 
 
 
