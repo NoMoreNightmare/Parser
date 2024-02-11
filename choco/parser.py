@@ -123,11 +123,17 @@ class Parser:
 
         # Function parameters
         parameters: List[Operation] = []
+        if self.check(TokenKind.IDENTIFIER):
+            parameters = self.parse_argument()
 
         self.match(TokenKind.RROUNDBRACKET)
 
+        return_type: ast.TypeName
         # Return type: default is <None>.
-        return_type = ast.TypeName('<None>')
+        if self.check(TokenKind.RARROW):
+            return_type = self.parse_return_type_opt()
+        else:
+            return_type = ast.TypeName('<None>')
 
         self.match(TokenKind.COLON)
 
@@ -207,6 +213,7 @@ class Parser:
                 return ast.ExprName(self.match(TokenKind.IDENTIFIER).value)
             return self.parse_literal()
 
+
         elif self.check(TokenKind.PASS):
             self.match(TokenKind.PASS)
         return ast.Pass()
@@ -284,28 +291,54 @@ class Parser:
         self.match(TokenKind.NEWLINE)
         return ast.VarDef(typed_var, literal)
 
-    def parse_typed_var(self) -> Operation:
+    def parse_typed_var(self) -> ast.TypedVar:
         id = self.match(TokenKind.IDENTIFIER)
         self.match(TokenKind.COLON)
         type_name = self.parse_type()
 
-        return ast.TypedVar(id.value, ast.TypeName(type_name.value))
+        return ast.TypedVar(id.value, type_name)
 
-    def parse_type(self) -> Token:
-        type_name: Token
+    def parse_type(self) -> ast.TypeName:
+        type_token: Token
         if self.check(TokenKind.OBJECT):
-            type_name = self.match(TokenKind.OBJECT)
+            type_token = self.match(TokenKind.OBJECT)
         elif self.check(TokenKind.INT):
-            type_name = self.match(TokenKind.INT)
+            type_token = self.match(TokenKind.INT)
         elif self.check(TokenKind.BOOL):
-            type_name = self.match(TokenKind.BOOL)
+            type_token = self.match(TokenKind.BOOL)
         elif self.check(TokenKind.STR):
-            type_name = self.match(TokenKind.STR)
+            type_token = self.match(TokenKind.STR)
         elif self.check(TokenKind.LSQUAREBRACKET):
             self.match(TokenKind.LSQUAREBRACKET)
-            type_name = self.parse_type()
+            type_new = self.parse_type()
             self.match(TokenKind.RSQUAREBRACKET)
+            return type_new
         else:
             exit(0)
 
-        return type_name
+        return ast.TypeName(type_token.value)
+
+    def parse_argument(self) -> List[Operation]:
+        typed_var = self.parse_typed_var()
+        lists = self.parse_multi_typed_var()
+        lists.insert(0, typed_var)
+        return lists
+
+    def parse_multi_typed_var(self) -> List[Operation]:
+        return self.parse_multi_typed_var_helper()
+
+    def parse_multi_typed_var_helper(self) -> List[Operation]:
+        self.match(TokenKind.COMMA)
+        typed_var = self.parse_typed_var()
+        if self.check(TokenKind.IDENTIFIER):
+            lists = self.parse_multi_typed_var_helper()
+            lists.append(typed_var)
+            return lists
+        else:
+            lists = [typed_var]
+            return lists
+
+    def parse_return_type_opt(self) -> ast.TypeName:
+        self.match(TokenKind.RARROW)
+        return_type = self.parse_type()
+        return return_type
