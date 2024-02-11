@@ -78,13 +78,9 @@ class Parser:
         TODO: Not fully implemented.
         :returns: The AST of a ChocoPy Program.
         """
-        defs: List[Operation] = []
-        stmts: List[Operation] = []
-        if self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.DEF):
 
-            defs = self.parse_multi_opt_var_or_func_def()
-        if self.is_stmt_first_set():
-            stmts = self.parse_multi_stmt()
+        defs = self.parse_multi_opt_var_or_func_def()
+        stmts = self.parse_multi_stmt()
 
         self.match(TokenKind.EOF)
 
@@ -109,6 +105,7 @@ class Parser:
         # return defs
         if self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.DEF):
             return self.parse_multi_opt_var_or_func_def_helper()
+        return []
 
     def parse_multi_opt_var_or_func_def_helper(self) -> List[Operation]:
         operation = self.parse_var_or_func()
@@ -175,7 +172,8 @@ class Parser:
         self.match(TokenKind.INDENT)
 
         func_body = []
-        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(TokenKind.IDENTIFIER):
+        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(TokenKind.IDENTIFIER) or self.is_stmt_first_set():
+
             func_body: List[Operation] = self.parse_func_body()
 
         # stmt_seq = self.parse_stmt_seq()
@@ -184,7 +182,6 @@ class Parser:
         #         'Error: Function body should have at least one statement.')
 
         # func_body = defs_and_decls + stmt_seq
-
         self.match(TokenKind.DEDENT)
 
         return ast.FuncDef(function_name.value, parameters, return_type, func_body)
@@ -221,7 +218,9 @@ class Parser:
         """
 
         if self.check(TokenKind.PASS) or self.is_expr_first_set() or self.check(TokenKind.RETURN):
+
             simple_stmt = self.parse_simple_stmt()
+
             self.match(TokenKind.NEWLINE)
             return simple_stmt
         elif self.check(TokenKind.IF):
@@ -288,12 +287,13 @@ class Parser:
     def parse_all_variables_assignment(self) -> List[Operation]:
         if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(TokenKind.IDENTIFIER):
             return self.parse_all_variables_assignment_helper()
+        return []
 
     def parse_all_variables_assignment_helper(self) -> List[Operation]:
         operation = self.parse_global_or_nonlocal_or_var()
         if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(TokenKind.IDENTIFIER):
             list_operation = self.parse_all_variables_assignment_helper()
-            list_operation.append(operation)
+            list_operation.insert(0,operation)
             return list_operation
         else:
             lists: List[Operation] = [operation]
@@ -315,7 +315,7 @@ class Parser:
         if self.check(TokenKind.NONLOCAL):
             non_local = self.parse_nonlocal_decl()
             return non_local
-        if self.check(TokenKind.NONLOCAL):
+        if self.check(TokenKind.IDENTIFIER):
             var_def = self.parse_var()
             return var_def
 
@@ -380,7 +380,7 @@ class Parser:
         typed_var = self.parse_typed_var()
         if self.check(TokenKind.IDENTIFIER):
             lists = self.parse_multi_typed_var_helper()
-            lists.append(typed_var)
+            lists.insert(0, typed_var)
             return lists
         else:
             lists = [typed_var]
