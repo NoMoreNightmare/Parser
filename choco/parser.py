@@ -261,15 +261,19 @@ class Parser:
             # if self.check(TokenKind.IDENTIFIER):
             #     return ast.ExprName(self.match(TokenKind.IDENTIFIER).value)
             # return self.parse_literal()
-            return self.parse_expr()
+            expr = self.parse_expr()
+            if self.check(TokenKind.ASSIGN):
+                self.match(TokenKind.ASSIGN)
+                operation = self.parse_expr_eq_pos_helper()
+                return ast.Assign(expr, operation)
+
+            return expr
         elif self.check(TokenKind.RETURN):
             self.match(TokenKind.RETURN)
             if self.is_expr_first_set():
                 operation = self.parse_expr()
                 return ast.Return(operation)
-            return ast.Return()
-        elif self.check(TokenKind.ASSIGN):
-            pass
+            return ast.Return(None)
         elif self.check(TokenKind.PASS):
             self.match(TokenKind.PASS)
             return ast.Pass()
@@ -538,6 +542,15 @@ class Parser:
             return orelse
         else:
             return []
+
+    def parse_expr_eq_pos_helper(self) -> Operation:
+        operation = self.parse_expr()
+        if self.check(TokenKind.ASSIGN):
+            self.match(TokenKind.ASSIGN)
+            value = self.parse_expr_eq_pos_helper()
+            return ast.Assign(operation, value)
+        return operation
+
 
 
 
