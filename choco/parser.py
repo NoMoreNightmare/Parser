@@ -80,8 +80,8 @@ class Parser:
         """
 
         defs = self.parse_multi_opt_var_or_func_def()
-        stmts = self.parse_multi_stmt()
 
+        stmts = self.parse_multi_stmt()
         self.match(TokenKind.EOF)
 
         return ModuleOp([ast.Program(defs, stmts)])
@@ -103,7 +103,7 @@ class Parser:
         #     defs.append(func_def)
         #
         # return defs
-        if self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.DEF):
+        if self.check([TokenKind.IDENTIFIER, TokenKind.COLON]) or self.check(TokenKind.DEF):
             return self.parse_multi_opt_var_or_func_def_helper()
         return []
 
@@ -220,7 +220,6 @@ class Parser:
         if self.check(TokenKind.PASS) or self.is_expr_first_set() or self.check(TokenKind.RETURN):
 
             simple_stmt = self.parse_simple_stmt()
-
             self.match(TokenKind.NEWLINE)
             return simple_stmt
         elif self.check(TokenKind.IF):
@@ -285,13 +284,13 @@ class Parser:
         return assignment + stmt
 
     def parse_all_variables_assignment(self) -> List[Operation]:
-        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(TokenKind.IDENTIFIER):
+        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check([TokenKind.IDENTIFIER, TokenKind.COLON]):
             return self.parse_all_variables_assignment_helper()
         return []
 
     def parse_all_variables_assignment_helper(self) -> List[Operation]:
         operation = self.parse_global_or_nonlocal_or_var()
-        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(TokenKind.IDENTIFIER):
+        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check([TokenKind.IDENTIFIER, TokenKind.COLON]):
             list_operation = self.parse_all_variables_assignment_helper()
             list_operation.insert(0,operation)
             return list_operation
@@ -391,21 +390,105 @@ class Parser:
         return_type = self.parse_type()
         return return_type
 
-    def parse_index_expr(self):
+    def parse_index_expr(self) -> Operation:
         value = self.parse_cexpr()
         self.match(TokenKind.LSQUAREBRACKET)
         index = self.parse_expr()
         self.match(TokenKind.RSQUAREBRACKET)
         return ast.IndexExpr(value, index)
 
-    def parse_cexpr(self) -> Operation:
-        pass
-
     def parse_expr(self) -> Operation:
-        if self.check(TokenKind.IDENTIFIER):
-            return ast.ExprName(self.match(TokenKind.IDENTIFIER).value)
-        return self.parse_literal()
+        return self.parse_expr_first()
 
+    def parse_expr_first(self) -> Operation:
+        return self.parse_expr_second()
+
+    def parse_expr_second(self) -> Operation:
+        return self.parse_expr_third()
+
+    def parse_expr_third(self) -> Operation:
+        return self.parse_cexpr()
+
+    def parse_cexpr(self) -> Operation:
+        return self.parse_cexpr_first()
+
+    def parse_cexpr_first(self) -> Operation:
+        return self.parse_cexpr_second()
+
+    def parse_cexpr_second(self) -> Operation:
+        return self.parse_cexpr_third()
+
+    def parse_cexpr_third(self) -> Operation:
+        value : Operation = None
+        if self.check([TokenKind.IDENTIFIER, TokenKind.LROUNDBRACKET]):
+            id = self.match(TokenKind.IDENTIFIER)
+            self.match(TokenKind.LROUNDBRACKET)
+
+            lists = self.parse_multi_expr_opt()
+
+            self.match(TokenKind.RROUNDBRACKET)
+            value = ast.CallExpr(id.value, lists)
+
+        elif self.check(TokenKind.IDENTIFIER):
+            value = ast.ExprName(self.match(TokenKind.IDENTIFIER).value)
+        elif self.check(TokenKind.NONE) or self.check(TokenKind.TRUE) or\
+                self.check(TokenKind.FALSE) or self.check(TokenKind.INTEGER)\
+                or self.check(TokenKind.STRING):
+            value = self.parse_literal()
+        elif self.check(TokenKind.LSQUAREBRACKET):
+            self.match(TokenKind.LSQUAREBRACKET)
+            operations = []
+            if self.is_expr_first_set():
+                operations = self.parse_multi_expr_opt()
+            self.match(TokenKind.RSQUAREBRACKET)
+            value = ast.ListExpr(operations)
+
+        elif self.check(TokenKind.LROUNDBRACKET):
+            pass
+        elif self.check(TokenKind.MINUS):
+            pass
+
+        if self.check(TokenKind.LSQUAREBRACKET):
+            lists = self.parse_cexpr_fourth()
+            for i in lists:
+                value = ast.IndexExpr(value, i)
+            return value
+
+        else:
+            return value
+
+    def parse_cexpr_fourth(self) -> List[Operation]:
+        self.match(TokenKind.LSQUAREBRACKET)
+        operation = self.parse_expr()
+        self.match(TokenKind.RSQUAREBRACKET)
+        if self.check(TokenKind.LSQUAREBRACKET):
+            lists = self.parse_cexpr_fourth()
+            lists.insert(0, operation)
+            return lists
+        else:
+            return [operation]
+
+    def parse_multi_expr_opt(self) -> List[Operation]:
+        operation = self.parse_expr()
+        if self.check(TokenKind.COMMA):
+            lists = self.parse_multi_expr()
+            lists.insert(0, operation)
+            return lists
+        else:
+            return [operation]
+
+    def parse_multi_expr(self) -> List[Operation]:
+        return self.parse_multi_expr_helper()
+
+    def parse_multi_expr_helper(self) -> List[Operation]:
+        self.match(TokenKind.COMMA)
+        operation = self.parse_expr()
+        if self.check(TokenKind.COMMA):
+            lists = self.parse_multi_expr_helper()
+            lists.insert(0, operation)
+            return lists
+        else:
+            return [operation]
 
 
 
