@@ -134,7 +134,7 @@ class Parser:
         self.match(TokenKind.NEWLINE)
         self.match(TokenKind.INDENT)
 
-        defs_and_decls: List[Operation] = []
+        defs_and_decls: List[Operation] = self.parse_func_body()
 
         stmt_seq = self.parse_stmt_seq()
         if not stmt_seq:
@@ -153,8 +153,9 @@ class Parser:
 
         TODO: Not fully implemented.
         """
-        return self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.LSQUAREBRACKET) or self.check(TokenKind.NONE) or self.check(TokenKind.TRUE) or self.check(TokenKind.FALSE) or self.check(TokenKind.INTEGER) or self.check(TokenKind.STRING)
-
+        return self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.LSQUAREBRACKET) or self.check(
+            TokenKind.NONE) or self.check(TokenKind.TRUE) or self.check(TokenKind.FALSE) or self.check(
+            TokenKind.INTEGER) or self.check(TokenKind.STRING)
 
     def is_stmt_first_set(self) -> bool:
         """
@@ -163,6 +164,7 @@ class Parser:
         TODO: Not fully implemented.
         """
         return (self.is_expr_first_set() or self.check(TokenKind.PASS))
+
     def parse_stmt_seq(self) -> List[Operation]:
         """Parse a sequence of statements.
 
@@ -201,6 +203,8 @@ class Parser:
         :return: Statement as operation
         """
         if self.is_expr_first_set():
+            if self.check(TokenKind.IDENTIFIER):
+                return ast.ExprName(self.match(TokenKind.IDENTIFIER).value)
             return self.parse_literal()
 
         elif self.check(TokenKind.PASS):
@@ -225,3 +229,83 @@ class Parser:
         if self.check(TokenKind.INTEGER):
             token: Token = self.match(TokenKind.INTEGER)
             return ast.Literal(token.value)
+
+    def parse_func_body(self) -> List[Operation]:
+        assignment = self.parse_all_variables_assignment()
+        stmt = self.parse_stmt_pos()
+
+        return assignment
+
+    def parse_all_variables_assignment(self) -> List[Operation]:
+        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(TokenKind.IDENTIFIER):
+            return self.parse_all_variables_assignment_helper()
+
+    def parse_all_variables_assignment_helper(self) -> List[Operation]:
+        operation = self.parse_global_or_nonlocal_or_var()
+        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(TokenKind.IDENTIFIER):
+            list_operation = self.parse_all_variables_assignment_helper()
+            list_operation.append(operation)
+            return list_operation
+        else:
+            lists: List[Operation] = [operation]
+            return lists
+
+    def parse_stmt_pos(self):
+        pass
+
+    def parse_global_or_nonlocal_or_var(self) -> Operation:
+        if self.check(TokenKind.GLOBAL):
+            global_decl = self.parse_global_decl()
+            return global_decl
+        if self.check(TokenKind.NONLOCAL):
+            non_local = self.parse_nonlocal_decl()
+            return non_local
+        if self.check(TokenKind.NONLOCAL):
+            var_def = self.parse_var()
+            return var_def
+
+    def parse_global_decl(self) -> Operation:
+        self.match(TokenKind.GLOBAL)
+        id = self.match(TokenKind.IDENTIFIER)
+        self.match(TokenKind.NEWLINE)
+        return ast.GlobalDecl(id.value)
+
+    def parse_nonlocal_decl(self) -> Operation:
+        self.match(TokenKind.NONLOCAL)
+        id = self.match(TokenKind.IDENTIFIER)
+        self.match(TokenKind.NEWLINE)
+
+        return ast.NonLocalDecl(id.value)
+
+    def parse_var(self) -> Operation:
+        typed_var = self.parse_typed_var()
+        self.match(TokenKind.ASSIGN)
+        literal = self.parse_literal()
+        self.match(TokenKind.NEWLINE)
+        return ast.VarDef(typed_var, literal)
+
+    def parse_typed_var(self) -> Operation:
+        id = self.match(TokenKind.IDENTIFIER)
+        self.match(TokenKind.COLON)
+        type_name = self.parse_type()
+
+        return ast.TypedVar(id.value, ast.TypeName(type_name.value))
+
+    def parse_type(self) -> Token:
+        type_name: Token
+        if self.check(TokenKind.OBJECT):
+            type_name = self.match(TokenKind.OBJECT)
+        elif self.check(TokenKind.INT):
+            type_name = self.match(TokenKind.INT)
+        elif self.check(TokenKind.BOOL):
+            type_name = self.match(TokenKind.BOOL)
+        elif self.check(TokenKind.STR):
+            type_name = self.match(TokenKind.STR)
+        elif self.check(TokenKind.LSQUAREBRACKET):
+            self.match(TokenKind.LSQUAREBRACKET)
+            type_name = self.parse_type()
+            self.match(TokenKind.RSQUAREBRACKET)
+        else:
+            exit(0)
+
+        return type_name
