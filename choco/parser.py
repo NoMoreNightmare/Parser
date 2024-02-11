@@ -431,14 +431,68 @@ class Parser:
     def parse_expr_third(self) -> Operation:
         return self.parse_cexpr()
 
+    """
+        因为比较运算符是不能像 x==y<z这样的，因此直接两边变成cexpr_first，但没考虑x==y + y==z这种情况
+    """
     def parse_cexpr(self) -> Operation:
-        return self.parse_cexpr_first()
+        operation = self.parse_cexpr_first()
+        if self.check(TokenKind.EQ):
+            eq = self.match(TokenKind.EQ)
+            rhs = self.parse_cexpr_first()
+            return ast.BinaryExpr(eq.value, operation, rhs)
+        elif self.check(TokenKind.NE):
+            ne = self.match(TokenKind.NE)
+            rhs = self.parse_cexpr_first()
+            return ast.BinaryExpr(ne.value, operation, rhs)
+        elif self.check(TokenKind.LE):
+            le = self.match(TokenKind.LE)
+            rhs = self.parse_cexpr_first()
+            return ast.BinaryExpr(le.value, operation, rhs)
+        elif self.check(TokenKind.GE):
+            ge = self.match(TokenKind.GE)
+            rhs = self.parse_cexpr_first()
+            return ast.BinaryExpr(ge.value, operation, rhs)
+        elif self.check(TokenKind.LT):
+            lt = self.match(TokenKind.LT)
+            rhs = self.parse_cexpr_first()
+            return ast.BinaryExpr(lt.value, operation, rhs)
+        elif self.check(TokenKind.GT):
+            gt = self.match(TokenKind.GT)
+            rhs = self.parse_cexpr_first()
+            return ast.BinaryExpr(gt.value, operation, rhs)
+        elif self.check(TokenKind.IS):
+            is_token = self.match(TokenKind.IS)
+            rhs = self.parse_cexpr_first()
+            return ast.BinaryExpr(is_token.value, operation, rhs)
+        return operation
 
     def parse_cexpr_first(self) -> Operation:
-        return self.parse_cexpr_second()
+        operation = self.parse_cexpr_second()
+        if self.check(TokenKind.PLUS):
+            plus = self.match(TokenKind.PLUS)
+            rhs = self.parse_cexpr_first()
+            return ast.BinaryExpr(plus.value, operation, rhs)
+        elif self.check(TokenKind.MINUS):
+            minus = self.match(TokenKind.MINUS)
+            rhs = self.parse_cexpr_first()
+            return ast.BinaryExpr(minus.value, operation, rhs)
+        return operation
 
     def parse_cexpr_second(self) -> Operation:
-        return self.parse_cexpr_third()
+        operation = self.parse_cexpr_third()
+        if self.check(TokenKind.MUL):
+            mul = self.match(TokenKind.MUL)
+            rhs = self.parse_cexpr_second()
+            return ast.BinaryExpr(mul.value, operation, rhs)
+        elif self.check(TokenKind.DIV):
+            div = self.match(TokenKind.DIV)
+            rhs = self.parse_cexpr_second()
+            return ast.BinaryExpr(div.value, operation, rhs)
+        elif self.check(TokenKind.MOD):
+            mod = self.match(TokenKind.MOD)
+            rhs = self.parse_cexpr_second()
+            return ast.BinaryExpr(mod.value, operation, rhs)
+        return operation
 
     def parse_cexpr_third(self) -> Operation:
         value : Operation = None
@@ -471,7 +525,7 @@ class Parser:
             self.match(TokenKind.RROUNDBRACKET)
         elif self.check(TokenKind.MINUS):
             minus = self.match(TokenKind.MINUS)
-            operation = self.parse_cexpr()
+            operation = self.parse_cexpr_third()
             value = ast.UnaryExpr(minus.value, operation)
 
         if self.check(TokenKind.LSQUAREBRACKET):
