@@ -209,19 +209,6 @@ class Parser:
         return (self.is_expr_first_set() or self.check(TokenKind.PASS) or self.check(TokenKind.IF) or
                 self.check(TokenKind.WHILE) or self.check(TokenKind.FOR) or self.check(TokenKind.RETURN))
 
-    def parse_stmt_seq(self) -> List[Operation]:
-        """Parse a sequence of statements.
-
-        stmt_seq := stmt stmt_seq
-
-        :return: list of Operations
-        """
-        stmt_seq: List[Operation] = []
-        while self.is_stmt_first_set():
-            stmt_op = self.parse_stmt()
-            stmt_seq.append(stmt_op)
-        return stmt_seq
-
     def parse_stmt(self) -> Operation:
         """Parse a statement.
 
@@ -232,7 +219,7 @@ class Parser:
         TODO: Not fully implemented.
         :return: Statement as operation
         """
-        stmt: Operation
+
         if self.check(TokenKind.PASS) or self.is_expr_first_set() or self.check(TokenKind.RETURN):
             simple_stmt = self.parse_simple_stmt()
             self.match(TokenKind.NEWLINE)
@@ -243,7 +230,6 @@ class Parser:
             pass
         elif self.check(TokenKind.FOR):
             pass
-        return stmt
 
     def parse_simple_stmt(self) -> Operation:
         """Parse a simple statement.
@@ -293,9 +279,11 @@ class Parser:
 
     def parse_func_body(self) -> List[Operation]:
         assignment = self.parse_all_variables_assignment()
-        stmt = self.parse_stmt_pos()
+        stmt = []
+        if self.is_stmt_first_set():
+            stmt = self.parse_stmt_pos()
 
-        return assignment
+        return assignment + stmt
 
     def parse_all_variables_assignment(self) -> List[Operation]:
         if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(TokenKind.IDENTIFIER):
@@ -311,8 +299,14 @@ class Parser:
             lists: List[Operation] = [operation]
             return lists
 
-    def parse_stmt_pos(self):
-        pass
+    def parse_stmt_pos(self) -> List[Operation]:
+        operation = self.parse_stmt()
+        if self.is_stmt_first_set():
+            lists = self.parse_stmt_pos()
+            lists.insert(0, operation)
+            return lists
+        else:
+            return [operation]
 
     def parse_global_or_nonlocal_or_var(self) -> Operation:
         if self.check(TokenKind.GLOBAL):
