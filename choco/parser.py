@@ -78,14 +78,19 @@ class Parser:
         TODO: Not fully implemented.
         :returns: The AST of a ChocoPy Program.
         """
-        defs = self.parse_def_seq()
-        stmts = []
+        defs: List[Operation] = []
+        stmts: List[Operation] = []
+        if self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.DEF):
+
+            defs = self.parse_multi_opt_var_or_func_def()
+        if self.is_stmt_first_set():
+            stmts = self.parse_multi_stmt()
 
         self.match(TokenKind.EOF)
 
         return ModuleOp([ast.Program(defs, stmts)])
 
-    def parse_def_seq(self) -> List[Operation]:
+    def parse_multi_opt_var_or_func_def(self) -> List[Operation]:
         """
         Parse a sequence of function and variable definitions.
 
@@ -95,13 +100,42 @@ class Parser:
         :returns: A list of function and variable definitions.
         """
 
-        defs: List[Operation] = []
+        # defs: List[Operation] = []
+        #
+        # while self.check(TokenKind.DEF):
+        #     func_def = self.parse_function()
+        #     defs.append(func_def)
+        #
+        # return defs
+        if self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.DEF):
+            return self.parse_multi_opt_var_or_func_def_helper()
 
-        while self.check(TokenKind.DEF):
-            func_def = self.parse_function()
-            defs.append(func_def)
+    def parse_multi_opt_var_or_func_def_helper(self) -> List[Operation]:
+        operation = self.parse_var_or_func()
+        if self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.DEF):
+            lists = self.parse_multi_opt_var_or_func_def_helper()
+            lists.insert(0, operation)
+            return lists
+        else:
+            return [operation]
 
-        return defs
+    def parse_var_or_func(self) -> Operation:
+        if self.check(TokenKind.IDENTIFIER):
+            return self.parse_var()
+        elif self.check(TokenKind.DEF):
+            return self.parse_function()
+
+    def parse_multi_stmt(self) -> List[Operation]:
+        return self.parse_multi_stmt_helper()
+
+    def parse_multi_stmt_helper(self) -> List[Operation]:
+        if self.is_stmt_first_set():
+            stmt = self.parse_stmt()
+            lists = self.parse_multi_stmt_helper()
+            lists.insert(0, stmt)
+            return lists
+        return []
+
 
     def parse_function(self) -> Operation:
         """
@@ -140,14 +174,16 @@ class Parser:
         self.match(TokenKind.NEWLINE)
         self.match(TokenKind.INDENT)
 
-        defs_and_decls: List[Operation] = self.parse_func_body()
+        func_body = []
+        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(TokenKind.IDENTIFIER):
+            func_body: List[Operation] = self.parse_func_body()
 
-        stmt_seq = self.parse_stmt_seq()
-        if not stmt_seq:
-            raise Exception(
-                'Error: Function body should have at least one statement.')
+        # stmt_seq = self.parse_stmt_seq()
+        # if not stmt_seq:
+        #     raise Exception(
+        #         'Error: Function body should have at least one statement.')
 
-        func_body = defs_and_decls + stmt_seq
+        # func_body = defs_and_decls + stmt_seq
 
         self.match(TokenKind.DEDENT)
 
@@ -160,8 +196,9 @@ class Parser:
         TODO: Not fully implemented.
         """
         return self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.LSQUAREBRACKET) or self.check(
-            TokenKind.NONE) or self.check(TokenKind.TRUE) or self.check(TokenKind.FALSE) or self.check(
-            TokenKind.INTEGER) or self.check(TokenKind.STRING)
+            TokenKind.LROUNDBRACKET) or self.check(TokenKind.MINUS) or self.check(TokenKind.NONE) or self.check(
+            TokenKind.TRUE) or self.check(TokenKind.FALSE) or self.check(TokenKind.INTEGER) or self.check(
+            TokenKind.STRING) or self.check(TokenKind.NOT)
 
     def is_stmt_first_set(self) -> bool:
         """
@@ -169,7 +206,8 @@ class Parser:
 
         TODO: Not fully implemented.
         """
-        return (self.is_expr_first_set() or self.check(TokenKind.PASS))
+        return (self.is_expr_first_set() or self.check(TokenKind.PASS) or self.check(TokenKind.IF) or
+                self.check(TokenKind.WHILE) or self.check(TokenKind.FOR) or self.check(TokenKind.RETURN))
 
     def parse_stmt_seq(self) -> List[Operation]:
         """Parse a sequence of statements.
@@ -194,9 +232,18 @@ class Parser:
         TODO: Not fully implemented.
         :return: Statement as operation
         """
-        simple_stmt = self.parse_simple_stmt()
-        self.match(TokenKind.NEWLINE)
-        return simple_stmt
+        stmt: Operation
+        if self.check(TokenKind.PASS) or self.is_expr_first_set() or self.check(TokenKind.RETURN):
+            simple_stmt = self.parse_simple_stmt()
+            self.match(TokenKind.NEWLINE)
+            return simple_stmt
+        elif self.check(TokenKind.IF):
+            pass
+        elif self.check(TokenKind.WHILE):
+            pass
+        elif self.check(TokenKind.FOR):
+            pass
+        return stmt
 
     def parse_simple_stmt(self) -> Operation:
         """Parse a simple statement.
@@ -209,14 +256,21 @@ class Parser:
         :return: Statement as operation
         """
         if self.is_expr_first_set():
-            if self.check(TokenKind.IDENTIFIER):
-                return ast.ExprName(self.match(TokenKind.IDENTIFIER).value)
-            return self.parse_literal()
-
-
+            # if self.check(TokenKind.IDENTIFIER):
+            #     return ast.ExprName(self.match(TokenKind.IDENTIFIER).value)
+            # return self.parse_literal()
+            return self.parse_expr()
+        elif self.check(TokenKind.RETURN):
+            self.match(TokenKind.RETURN)
+            if self.is_expr_first_set():
+                operation = self.parse_expr()
+                return ast.Return(operation)
+            return ast.Return()
+        elif self.check(TokenKind.ASSIGN):
+            pass
         elif self.check(TokenKind.PASS):
             self.match(TokenKind.PASS)
-        return ast.Pass()
+            return ast.Pass()
 
     def parse_literal(self) -> ast.Literal:
 
@@ -342,3 +396,22 @@ class Parser:
         self.match(TokenKind.RARROW)
         return_type = self.parse_type()
         return return_type
+
+    def parse_index_expr(self):
+        value = self.parse_cexpr()
+        self.match(TokenKind.LSQUAREBRACKET)
+        index = self.parse_expr()
+        self.match(TokenKind.RSQUAREBRACKET)
+        return ast.IndexExpr(value, index)
+
+    def parse_cexpr(self) -> Operation:
+        pass
+
+    def parse_expr(self) -> Operation:
+        if self.check(TokenKind.IDENTIFIER):
+            return ast.ExprName(self.match(TokenKind.IDENTIFIER).value)
+        return self.parse_literal()
+
+
+
+
