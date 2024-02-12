@@ -420,15 +420,52 @@ class Parser:
         return ast.IndexExpr(value, index)
 
     def parse_expr(self) -> Operation:
-        return self.parse_expr_first()
+        then = self.parse_expr_first()
+        if self.check(TokenKind.IF):
+            self.match(TokenKind.IF)
+            condition = self.parse_expr()
+            self.match(TokenKind.ELSE)
+            orelse = self.parse_expr()
+            return ast.If(condition, [then], [orelse])
+        return then
 
     def parse_expr_first(self) -> Operation:
-        return self.parse_expr_second()
+        lhs = self.parse_expr_second()
+        if self.check(TokenKind.OR):
+            value = self.parse_expr_first_helper(lhs)
+            return value
+        return lhs
+
+    def parse_expr_first_helper(self, lhs: Operation) -> Operation:
+        if self.check(TokenKind.OR):
+            or_token = self.match(TokenKind.OR)
+            rhs = self.parse_expr_second()
+            new_lhs = ast.BinaryExpr(or_token.value, lhs, rhs)
+            if self.check(TokenKind.OR):
+                return self.parse_expr_first_helper(new_lhs)
+            return new_lhs
 
     def parse_expr_second(self) -> Operation:
-        return self.parse_expr_third()
+        lhs = self.parse_expr_third()
+        if self.check(TokenKind.AND):
+            value = self.parse_expr_second_helper(lhs)
+            return value
+        return lhs
+
+    def parse_expr_second_helper(self, lhs: Operation) -> Operation:
+        if self.check(TokenKind.AND):
+            and_token = self.match(TokenKind.AND)
+            rhs = self.parse_expr_third()
+            new_lhs = ast.BinaryExpr(and_token.value, lhs, rhs)
+            if self.check(TokenKind.AND):
+                return self.parse_expr_second_helper(new_lhs)
+            return new_lhs
 
     def parse_expr_third(self) -> Operation:
+        if self.check(TokenKind.NOT):
+            not_token = self.match(TokenKind.NOT)
+            operation = self.parse_expr_third()
+            return ast.UnaryExpr(not_token.value, operation)
         return self.parse_cexpr()
 
     """
