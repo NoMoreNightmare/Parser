@@ -367,7 +367,7 @@ class Parser:
 
         return ast.TypedVar(id.value, type_name)
 
-    def parse_type(self) -> ast.TypeName:
+    def parse_type(self) -> Operation:
         type_token: Token
         if self.check(TokenKind.OBJECT):
             type_token = self.match(TokenKind.OBJECT)
@@ -381,7 +381,8 @@ class Parser:
             self.match(TokenKind.LSQUAREBRACKET)
             type_new = self.parse_type()
             self.match(TokenKind.RSQUAREBRACKET)
-            return type_new
+
+            return ast.ListType(type_new)
         else:
             exit(0)
 
@@ -389,7 +390,9 @@ class Parser:
 
     def parse_argument(self) -> List[Operation]:
         typed_var = self.parse_typed_var()
-        lists = self.parse_multi_typed_var()
+        lists = []
+        if self.check(TokenKind.COMMA):
+            lists = self.parse_multi_typed_var()
         lists.insert(0, typed_var)
         return lists
 
@@ -426,7 +429,7 @@ class Parser:
             condition = self.parse_expr()
             self.match(TokenKind.ELSE)
             orelse = self.parse_expr()
-            return ast.If(condition, [then], [orelse])
+            return ast.IfExpr(condition, then, orelse)
         return then
 
     def parse_expr_first(self) -> Operation:
