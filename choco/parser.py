@@ -466,33 +466,83 @@ class Parser:
             return ast.BinaryExpr(is_token.value, operation, rhs)
         return operation
 
+    # def parse_cexpr_first(self) -> Operation:
+    #     operation = self.parse_cexpr_second()
+    #     if self.check(TokenKind.PLUS):
+    #         plus = self.match(TokenKind.PLUS)
+    #         rhs = self.parse_cexpr_first()
+    #         return ast.BinaryExpr(plus.value, operation, rhs)
+    #     elif self.check(TokenKind.MINUS):
+    #         minus = self.match(TokenKind.MINUS)
+    #         rhs = self.parse_cexpr_first()
+    #         return ast.BinaryExpr(minus.value, operation, rhs)
+    #     return operation
     def parse_cexpr_first(self) -> Operation:
-        operation = self.parse_cexpr_second()
+        lhs = self.parse_cexpr_second()
+        if self.check(TokenKind.PLUS) or self.check(TokenKind.MINUS):
+            value = self.parse_cexpr_first_helper(lhs)
+            return value
+        return lhs
+
+    def parse_cexpr_first_helper(self, lhs: Operation) -> Operation:
         if self.check(TokenKind.PLUS):
             plus = self.match(TokenKind.PLUS)
-            rhs = self.parse_cexpr_first()
-            return ast.BinaryExpr(plus.value, operation, rhs)
+            rhs = self.parse_cexpr_second()
+            new_lhs = ast.BinaryExpr(plus.value, lhs, rhs)
+            if self.check(TokenKind.PLUS) or self.check(TokenKind.MINUS):
+                return self.parse_cexpr_first_helper(new_lhs)
+            return new_lhs
         elif self.check(TokenKind.MINUS):
-            minus = self.match(TokenKind.MINUS)
-            rhs = self.parse_cexpr_first()
-            return ast.BinaryExpr(minus.value, operation, rhs)
-        return operation
+            plus = self.match(TokenKind.MINUS)
+            rhs = self.parse_cexpr_second()
+            new_lhs = ast.BinaryExpr(plus.value, lhs, rhs)
+            if self.check(TokenKind.PLUS) or self.check(TokenKind.MINUS):
+                return self.parse_cexpr_first_helper(new_lhs)
+            return new_lhs
 
+    # def parse_cexpr_second(self) -> Operation:
+    #     operation = self.parse_cexpr_third()
+    #     if self.check(TokenKind.MUL):
+    #         mul = self.match(TokenKind.MUL)
+    #         rhs = self.parse_cexpr_second()
+    #         return ast.BinaryExpr(mul.value, operation, rhs)
+    #     elif self.check(TokenKind.DIV):
+    #         div = self.match(TokenKind.DIV)
+    #         rhs = self.parse_cexpr_second()
+    #         return ast.BinaryExpr(div.value, operation, rhs)
+    #     elif self.check(TokenKind.MOD):
+    #         mod = self.match(TokenKind.MOD)
+    #         rhs = self.parse_cexpr_second()
+    #         return ast.BinaryExpr(mod.value, operation, rhs)
+    #     return operation
     def parse_cexpr_second(self) -> Operation:
-        operation = self.parse_cexpr_third()
+        lhs = self.parse_cexpr_third()
+        if self.check(TokenKind.MUL) or self.check(TokenKind.DIV) or self.check(TokenKind.MOD):
+            return self.parse_cexpr_second_helper(lhs)
+        return lhs
+
+    def parse_cexpr_second_helper(self, lhs: Operation) -> Operation:
         if self.check(TokenKind.MUL):
             mul = self.match(TokenKind.MUL)
-            rhs = self.parse_cexpr_second()
-            return ast.BinaryExpr(mul.value, operation, rhs)
+            rhs = self.parse_cexpr_third()
+            new_lhs = ast.BinaryExpr(mul.value, lhs, rhs)
+            if self.check(TokenKind.MUL) or self.check(TokenKind.DIV) or self.check(TokenKind.MOD):
+                return self.parse_cexpr_second_helper(new_lhs)
+            return new_lhs
         elif self.check(TokenKind.DIV):
             div = self.match(TokenKind.DIV)
-            rhs = self.parse_cexpr_second()
-            return ast.BinaryExpr(div.value, operation, rhs)
+            rhs = self.parse_cexpr_third()
+            new_lhs = ast.BinaryExpr(div.value, lhs, rhs)
+            if self.check(TokenKind.MUL) or self.check(TokenKind.DIV) or self.check(TokenKind.MOD):
+                return self.parse_cexpr_second_helper(new_lhs)
+            return new_lhs
         elif self.check(TokenKind.MOD):
             mod = self.match(TokenKind.MOD)
-            rhs = self.parse_cexpr_second()
-            return ast.BinaryExpr(mod.value, operation, rhs)
-        return operation
+            rhs = self.parse_cexpr_third()
+            new_lhs = ast.BinaryExpr(mod.value, lhs, rhs)
+            if self.check(TokenKind.MUL) or self.check(TokenKind.DIV) or self.check(TokenKind.MOD):
+                return self.parse_cexpr_second_helper(new_lhs)
+            return new_lhs
 
     def parse_cexpr_third(self) -> Operation:
         value : Operation = None
