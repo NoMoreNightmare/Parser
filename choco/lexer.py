@@ -157,6 +157,8 @@ class Tokenizer:
         self.token_start = 0
         self.mystr = ''
 
+        self.change = False
+
     def peek(self, k: int = 1) -> Union[Token, List[Token]]:
         """Peeks through the next `k` number of tokens.
 
@@ -181,6 +183,13 @@ class Tokenizer:
             return self.buffer[0]
 
         return self.buffer[0:k]
+
+    def reset(self):
+        if self.change:
+            self.line = self.line + 1
+            self.column = 1
+            self.mystr = ''
+            self.change = False
 
     def consume(self, keep_buffer: bool = False) -> Token:
         """Consumes one token and implements peeking through the next one.
@@ -212,9 +221,8 @@ class Tokenizer:
                     self.line_indent_lvl = 0
                     self.is_new_line = True
 
-                    self.line = self.line + 1
-                    self.column = 1
-                    self.mystr = ''
+                    self.change = True
+                    self.token_start = self.column
 
                     if self.is_logical_line:
                         self.is_logical_line = False
@@ -224,9 +232,8 @@ class Tokenizer:
                     self.line_indent_lvl = 0
                     self.is_new_line = True
 
-                    self.line = self.line + 1
-                    self.column = 1
-                    self.mystr = ''
+                    self.change = True
+                    self.token_start = self.column
 
                     if self.is_logical_line:
                         self.is_logical_line = False
@@ -286,6 +293,8 @@ class Tokenizer:
                         exit(1)
                 self.is_new_line = False
             elif c == "+":
+                self.reset()
+
                 self.scanner.consume()
 
                 self.token_start = self.column
@@ -294,6 +303,8 @@ class Tokenizer:
 
                 return Token(TokenKind.PLUS, "+")
             elif c == "-":
+                self.reset()
+
                 self.scanner.consume()
                 c += self.scanner.peek()
                 if c == "->":
@@ -312,15 +323,16 @@ class Tokenizer:
 
                     return Token(TokenKind.MINUS, "-")
             elif c == "*":
+                self.reset()
 
                 self.token_start = self.column
                 self.column += 1
                 self.mystr += c
 
-
                 self.scanner.consume()
                 return Token(TokenKind.MUL, "*")
             elif c == "%":
+                self.reset()
 
                 self.token_start = self.column
                 self.column += 1
@@ -329,6 +341,7 @@ class Tokenizer:
                 self.scanner.consume()
                 return Token(TokenKind.MOD, "%")
             elif c == "/":
+                self.reset()
 
                 self.scanner.consume()
                 c += self.scanner.peek()
@@ -347,6 +360,8 @@ class Tokenizer:
 
                     raise Exception("Unknown lexeme: {}".format(c))
             elif c == "=":
+                self.reset()
+
                 self.scanner.consume()
                 c += self.scanner.peek()
                 if c == "==":
@@ -365,6 +380,8 @@ class Tokenizer:
 
                     return Token(TokenKind.ASSIGN, "=")
             elif c == "!":
+                self.reset()
+
                 self.scanner.consume()
                 c += self.scanner.peek()
                 if c == "!=":
@@ -382,6 +399,7 @@ class Tokenizer:
 
                     raise Exception("Unknown lexeme: {}".format(c))
             elif c == "<":
+                self.reset()
 
                 self.scanner.consume()
                 c += self.scanner.peek()
@@ -401,6 +419,8 @@ class Tokenizer:
 
                     return Token(TokenKind.LT, "<")
             elif c == ">":
+                self.reset()
+
                 self.scanner.consume()
                 c += self.scanner.peek()
                 if c == ">=":
@@ -419,6 +439,7 @@ class Tokenizer:
 
                     return Token(TokenKind.GT, ">")
             elif c == "(":
+                self.reset()
 
                 self.token_start = self.column
                 self.column += 1
@@ -427,6 +448,7 @@ class Tokenizer:
                 self.scanner.consume()
                 return Token(TokenKind.LROUNDBRACKET, "(")
             elif c == ")":
+                self.reset()
 
                 self.token_start = self.column
                 self.column += 1
@@ -435,6 +457,8 @@ class Tokenizer:
                 self.scanner.consume()
                 return Token(TokenKind.RROUNDBRACKET, ")")
             elif c == ":":
+                self.reset()
+
                 self.token_start = self.column
                 self.column += 1
                 self.mystr += c
@@ -442,6 +466,8 @@ class Tokenizer:
                 self.scanner.consume()
                 return Token(TokenKind.COLON, ":")
             elif c == "[":
+                self.reset()
+
                 self.token_start = self.column
                 self.column += 1
                 self.mystr += c
@@ -449,6 +475,8 @@ class Tokenizer:
                 self.scanner.consume()
                 return Token(TokenKind.LSQUAREBRACKET, "[")
             elif c == "]":
+                self.reset()
+
                 self.token_start = self.column
                 self.column += 1
                 self.mystr += c
@@ -456,6 +484,8 @@ class Tokenizer:
                 self.scanner.consume()
                 return Token(TokenKind.RSQUAREBRACKET, "]")
             elif c == ",":
+                self.reset()
+
                 self.token_start = self.column
                 self.column += 1
                 self.mystr += c
@@ -464,6 +494,8 @@ class Tokenizer:
                 return Token(TokenKind.COMMA, ",")
             # Identifier: [a-zA-Z_][a-zA-Z0-9_]*
             elif c.isalpha() or c == "_":
+                self.reset()
+
                 self.token_start = self.column
                 self.column += 1
                 self.mystr += c
@@ -471,7 +503,6 @@ class Tokenizer:
                 name = self.scanner.consume()
                 c = self.scanner.peek()
                 while c.isalnum() or c == "_":
-
                     self.column += 1
                     self.mystr += c
 
@@ -528,6 +559,8 @@ class Tokenizer:
                 return Token(TokenKind.IDENTIFIER, name)
             # Number: [0-9]+
             elif c.isdigit():
+                self.reset()
+
                 self.token_start = self.column
                 self.column += 1
                 self.mystr += c
@@ -540,6 +573,8 @@ class Tokenizer:
                 return Token(TokenKind.INTEGER, int(value))
             # String
             elif c == '"':
+                self.reset()
+
                 string: str = ""
 
                 self.token_start = self.column
@@ -625,7 +660,6 @@ class Lexer:
         mystr = self.tokenizer.mystr
         c = self.tokenizer.scanner.peek()
         while c != "\n" and c != "\r" and c:
-
             mystr += c
             self.tokenizer.scanner.consume()
 

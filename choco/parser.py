@@ -949,6 +949,7 @@ class Parser:
             exit(0)
 
     def check_rround(self):
+
         if not self.check(TokenKind.RROUNDBRACKET):
             [row, column, mystr] = self.lexer.return_row_column()
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.RROUNDBRACKET not found.")
