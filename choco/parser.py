@@ -154,7 +154,7 @@ class Parser:
 
         function_name = self.match(TokenKind.IDENTIFIER)
 
-        self.check_func_def_lround()
+        self.check_lround()
         self.match(TokenKind.LROUNDBRACKET)
 
         # Function parameters
@@ -162,9 +162,9 @@ class Parser:
         if self.check(TokenKind.IDENTIFIER):
             parameters = self.parse_argument()
 
-        self.check_func_def_rround()
+        self.check_rround()
         self.match(TokenKind.RROUNDBRACKET)
-
+        self.check_unmatched_parenthesis()
         return_type: Operation
         # Return type: default is <None>.
         if self.check(TokenKind.RARROW):
@@ -432,6 +432,13 @@ class Parser:
 
             return ast.ListType(type_new)
         else:
+            [row, column, mystr] = self.lexer.return_row_column()
+            print("SyntaxError (line", str(row) + ", column", str(column) + "): Unknown type.")
+            print(">>>" + mystr)
+            print(">>>", end="")
+            for i in range(0, column - 1):
+                print("-", end="")
+            print("^")
             exit(0)
 
         return ast.TypeName(type_token.value)
@@ -718,7 +725,9 @@ class Parser:
 
             lists = self.parse_multi_expr_opt()
 
+            self.check_rround()
             self.match(TokenKind.RROUNDBRACKET)
+            self.check_unmatched_parenthesis()
             value = ast.CallExpr(id.value, lists)
 
         elif self.check(TokenKind.IDENTIFIER):
@@ -740,7 +749,9 @@ class Parser:
         elif self.check(TokenKind.LROUNDBRACKET):
             self.match(TokenKind.LROUNDBRACKET)
             value = self.parse_expr()
+            self.check_rround()
             self.match(TokenKind.RROUNDBRACKET)
+            self.check_unmatched_parenthesis()
         elif self.check(TokenKind.MINUS):
             minus = self.match(TokenKind.MINUS)
             self.check_expr_error()
@@ -918,7 +929,7 @@ class Parser:
             print("^")
             exit(0)
 
-    def check_func_def_lround(self):
+    def check_lround(self):
         if not self.check(TokenKind.LROUNDBRACKET):
             [row, column, mystr] = self.lexer.return_row_column()
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.LROUNDBRACKET not found.")
@@ -929,7 +940,7 @@ class Parser:
             print("^")
             exit(0)
 
-    def check_func_def_rround(self):
+    def check_rround(self):
         if not self.check(TokenKind.RROUNDBRACKET):
             [row, column, mystr] = self.lexer.return_row_column()
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.RROUNDBRACKET not found.")
@@ -972,3 +983,14 @@ class Parser:
             print("^")
             exit(0)
 
+
+    def check_unmatched_parenthesis(self):
+        if self.check(TokenKind.RROUNDBRACKET):
+            [row, column, mystr] = self.lexer.return_row_column()
+            print("SyntaxError (line", str(row) + ", column", str(column) + ": unmatched ')'.")
+            print(">>>" + mystr)
+            print(">>>", end="")
+            for i in range(0, column):
+                print("-", end="")
+            print("^")
+            exit(0)
