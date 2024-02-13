@@ -625,7 +625,7 @@ class Lexer:
         mystr = self.tokenizer.mystr
         c = self.tokenizer.scanner.peek()
         while c != "\n" and c != "\r" and c:
-            print(c)
+
             mystr += c
             self.tokenizer.scanner.consume()
 
