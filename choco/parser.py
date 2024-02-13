@@ -220,6 +220,16 @@ class Parser:
         if self.check(TokenKind.PASS) or self.is_expr_first_set() or self.check(TokenKind.RETURN):
 
             simple_stmt = self.parse_simple_stmt()
+            if self.check(TokenKind.EQ) or self.check(TokenKind.NE) or self.check(TokenKind.LE) or \
+                            self.check(TokenKind.GE) or self.check(TokenKind.LT) or self.check(TokenKind.GT) or self.check(TokenKind.IS):
+                [row, column, mystr] = self.lexer.return_row_column()
+                print("SyntaxError (line", str(row) + ", column", str(column) + "): Comparison operators are not associative.")
+                print(">>>"+mystr)
+                print(">>>",end="")
+                for i in range(0, column - 1):
+                    print("-", end="")
+                print("^")
+                exit(0)
             self.match(TokenKind.NEWLINE)
             return simple_stmt
         elif self.check(TokenKind.IF):
@@ -393,6 +403,15 @@ class Parser:
         lists = []
         if self.check(TokenKind.COMMA):
             lists = self.parse_multi_typed_var()
+        elif self.is_expr_first_set():
+            [row, column, mystr] = self.lexer.return_row_column()
+            print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
+            print(">>>"+mystr)
+            print(">>>",end="")
+            for i in range(0, column - 1):
+                print("-", end="")
+            print("^")
+            exit(0)
         lists.insert(0, typed_var)
         return lists
 
@@ -402,10 +421,19 @@ class Parser:
     def parse_multi_typed_var_helper(self) -> List[Operation]:
         self.match(TokenKind.COMMA)
         typed_var = self.parse_typed_var()
-        if self.check(TokenKind.IDENTIFIER):
+        if self.check(TokenKind.COMMA):
             lists = self.parse_multi_typed_var_helper()
             lists.insert(0, typed_var)
             return lists
+        elif self.is_expr_first_set():
+            [row, column, mystr] = self.lexer.return_row_column()
+            print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
+            print(">>>"+mystr)
+            print(">>>",end="")
+            for i in range(0, column - 1):
+                print("-", end="")
+            print("^")
+            exit(0)
         else:
             lists = [typed_var]
             return lists
@@ -505,6 +533,45 @@ class Parser:
             rhs = self.parse_cexpr_first()
             return ast.BinaryExpr(is_token.value, operation, rhs)
         return operation
+
+    # def parse_cexpr(self) -> Operation:
+    #     lhs = self.parse_cexpr_first()
+    #     if self.check(TokenKind.EQ) or self.check(TokenKind.NE) or self.check(TokenKind.LE) or \
+    #         self.check(TokenKind.GE) or self.check(TokenKind.LT) or self.check(TokenKind.GT) or self.check(TokenKind.IS):
+    #         value = self.parse_cexpr_helper(lhs)
+    #         return value
+    #     return lhs
+    #
+    # def parse_cexpr_helper(self, lhs: Operation):
+    #     if self.check(TokenKind.EQ):
+    #         eq = self.match(TokenKind.EQ)
+    #         rhs = self.parse_cexpr_first()
+    #         return ast.BinaryExpr(eq.value, lhs, rhs)
+    #     elif self.check(TokenKind.NE):
+    #         ne = self.match(TokenKind.NE)
+    #         rhs = self.parse_cexpr_first()
+    #         return ast.BinaryExpr(ne.value, lhs, rhs)
+    #     elif self.check(TokenKind.LE):
+    #         le = self.match(TokenKind.LE)
+    #         rhs = self.parse_cexpr_first()
+    #         return ast.BinaryExpr(le.value, lhs, rhs)
+    #     elif self.check(TokenKind.GE):
+    #         ge = self.match(TokenKind.GE)
+    #         rhs = self.parse_cexpr_first()
+    #         return ast.BinaryExpr(ge.value, lhs, rhs)
+    #     elif self.check(TokenKind.LT):
+    #         lt = self.match(TokenKind.LT)
+    #         rhs = self.parse_cexpr_first()
+    #         return ast.BinaryExpr(lt.value, lhs, rhs)
+    #     elif self.check(TokenKind.GT):
+    #         gt = self.match(TokenKind.GT)
+    #         rhs = self.parse_cexpr_first()
+    #         return ast.BinaryExpr(gt.value, lhs, rhs)
+    #     elif self.check(TokenKind.IS):
+    #         is_token = self.match(TokenKind.IS)
+    #         rhs = self.parse_cexpr_first()
+    #         return ast.BinaryExpr(is_token.value, lhs, rhs)
+    #     return lhs
 
     # def parse_cexpr_first(self) -> Operation:
     #     operation = self.parse_cexpr_second()
@@ -623,7 +690,6 @@ class Parser:
             for i in lists:
                 value = ast.IndexExpr(value, i)
             return value
-
         else:
             return value
 
@@ -644,6 +710,15 @@ class Parser:
             lists = self.parse_multi_expr()
             lists.insert(0, operation)
             return lists
+        elif self.is_expr_first_set():
+            [row, column, mystr] = self.lexer.return_row_column()
+            print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
+            print(">>>"+mystr)
+            print(">>>",end="")
+            for i in range(0, column - 1):
+                print("-", end="")
+            print("^")
+            exit(0)
         else:
             return [operation]
 
@@ -657,6 +732,15 @@ class Parser:
             lists = self.parse_multi_expr_helper()
             lists.insert(0, operation)
             return lists
+        elif self.is_expr_first_set():
+            [row, column, mystr] = self.lexer.return_row_column()
+            print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
+            print(">>>"+mystr)
+            print(">>>",end="")
+            for i in range(0, column - 1):
+                print("-", end="")
+            print("^")
+            exit(0)
         else:
             return [operation]
 

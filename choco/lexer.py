@@ -152,6 +152,11 @@ class Tokenizer:
         # Resets after every end-of-line sequence.
         self.indent_stack = [0]
 
+        self.line = 1
+        self.column = 1
+        self.token_start = 0
+        self.mystr = ''
+
     def peek(self, k: int = 1) -> Union[Token, List[Token]]:
         """Peeks through the next `k` number of tokens.
 
@@ -199,11 +204,18 @@ class Tokenizer:
                 # Tabs are replaced from left to right by one to eight spaces.
                 # The total number of spaces up to and including the replacement should be a multiple of eight.
                 if c == "\t":
+                    self.column += 8
+                    self.mystr += c
                     if self.is_new_line:  # We only care about padding at the beginning of line.
                         self.line_indent_lvl += 8 - self.line_indent_lvl % 8
                 elif c == "\n":  # line feed handling
                     self.line_indent_lvl = 0
                     self.is_new_line = True
+
+                    self.line = self.line + 1
+                    self.column = 1
+                    self.mystr = ''
+
                     if self.is_logical_line:
                         self.is_logical_line = False
                         self.scanner.consume()
@@ -211,11 +223,20 @@ class Tokenizer:
                 elif c == "\r":  # carriage return handling
                     self.line_indent_lvl = 0
                     self.is_new_line = True
+
+                    self.line = self.line + 1
+                    self.column = 1
+                    self.mystr = ''
+
                     if self.is_logical_line:
                         self.is_logical_line = False
                         self.scanner.consume()
                         return Token(TokenKind.NEWLINE, None)
                 else:  # Handle the rest whitespaces
+
+                    self.column += 1
+                    self.mystr += c
+
                     if self.is_new_line:
                         self.line_indent_lvl += 1
                 # Consume whitespace
@@ -226,16 +247,24 @@ class Tokenizer:
             elif c == '#':
                 self.scanner.consume()
                 c = self.scanner.peek()
+
+                self.column += 1
+                self.mystr += c
+
                 while c and c != "\n" and c != "\r":
                     self.scanner.consume()
                     c = self.scanner.peek()
+
+                    self.column += 1
+                    self.mystr += c
+
                 continue
             # Indentation
             elif c and not c.isspace() and c != "#" and self.is_new_line:
                 # OK, we are in a logical line now (at least one token that is not whitespace or comment).
                 self.is_logical_line = True
                 if (
-                    self.line_indent_lvl > self.indent_stack[-1]
+                        self.line_indent_lvl > self.indent_stack[-1]
                 ):  # New indentation level
                     # Push the indentation level to the stack.
                     self.indent_stack.append(self.line_indent_lvl)
@@ -243,7 +272,7 @@ class Tokenizer:
                     # Do not consume any character (this will happen in the next call of get_token()).
                     return Token(TokenKind.INDENT, None)
                 elif (
-                    self.line_indent_lvl < self.indent_stack[-1]
+                        self.line_indent_lvl < self.indent_stack[-1]
                 ):  # Previous indentation level is (probably) closing.
                     try:
                         self.indent_stack.index(self.line_indent_lvl)
@@ -258,84 +287,194 @@ class Tokenizer:
                 self.is_new_line = False
             elif c == "+":
                 self.scanner.consume()
+
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
                 return Token(TokenKind.PLUS, "+")
             elif c == "-":
                 self.scanner.consume()
                 c += self.scanner.peek()
                 if c == "->":
                     self.scanner.consume()
+
+                    self.token_start = self.column
+                    self.column += 2
+                    self.mystr += c
+
                     return Token(TokenKind.RARROW, "->")
                 else:
+
+                    self.token_start = self.column
+                    self.column += 1
+                    self.mystr += "-"
+
                     return Token(TokenKind.MINUS, "-")
             elif c == "*":
+
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
+
                 self.scanner.consume()
                 return Token(TokenKind.MUL, "*")
             elif c == "%":
+
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
                 self.scanner.consume()
                 return Token(TokenKind.MOD, "%")
             elif c == "/":
+
                 self.scanner.consume()
                 c += self.scanner.peek()
                 if c == "//":
+
+                    self.token_start = self.column
+                    self.column += 2
+                    self.mystr += c
+
                     self.scanner.consume()
                     return Token(TokenKind.DIV, "//")
                 else:
+                    self.token_start = self.column
+                    self.column += 1
+                    self.mystr += "/"
+
                     raise Exception("Unknown lexeme: {}".format(c))
             elif c == "=":
                 self.scanner.consume()
                 c += self.scanner.peek()
                 if c == "==":
+
+                    self.token_start = self.column
+                    self.column += 2
+                    self.mystr += c
+
                     self.scanner.consume()
                     return Token(TokenKind.EQ, "==")
                 else:
+
+                    self.token_start = self.column
+                    self.column += 1
+                    self.mystr += "="
+
                     return Token(TokenKind.ASSIGN, "=")
             elif c == "!":
                 self.scanner.consume()
                 c += self.scanner.peek()
                 if c == "!=":
+
+                    self.token_start = self.column
+                    self.column += 2
+                    self.mystr += c
+
                     self.scanner.consume()
                     return Token(TokenKind.NE, "!=")
                 else:
+                    self.token_start = self.column
+                    self.column += 1
+                    self.mystr += "!"
+
                     raise Exception("Unknown lexeme: {}".format(c))
             elif c == "<":
+
                 self.scanner.consume()
                 c += self.scanner.peek()
                 if c == "<=":
+
+                    self.token_start = self.column
+                    self.column += 2
+                    self.mystr += c
+
                     self.scanner.consume()
                     return Token(TokenKind.LE, "<=")
                 else:
+
+                    self.token_start = self.column
+                    self.column += 1
+                    self.mystr += "<"
+
                     return Token(TokenKind.LT, "<")
             elif c == ">":
                 self.scanner.consume()
                 c += self.scanner.peek()
                 if c == ">=":
+
+                    self.token_start = self.column
+                    self.column += 2
+                    self.mystr += c
+
                     self.scanner.consume()
                     return Token(TokenKind.GE, ">=")
                 else:
+
+                    self.token_start = self.column
+                    self.column += 1
+                    self.mystr += ">"
+
                     return Token(TokenKind.GT, ">")
             elif c == "(":
+
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
                 self.scanner.consume()
                 return Token(TokenKind.LROUNDBRACKET, "(")
             elif c == ")":
+
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
                 self.scanner.consume()
                 return Token(TokenKind.RROUNDBRACKET, ")")
             elif c == ":":
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
                 self.scanner.consume()
                 return Token(TokenKind.COLON, ":")
             elif c == "[":
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
                 self.scanner.consume()
                 return Token(TokenKind.LSQUAREBRACKET, "[")
             elif c == "]":
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
                 self.scanner.consume()
                 return Token(TokenKind.RSQUAREBRACKET, "]")
             elif c == ",":
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
                 self.scanner.consume()
                 return Token(TokenKind.COMMA, ",")
             # Identifier: [a-zA-Z_][a-zA-Z0-9_]*
             elif c.isalpha() or c == "_":
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
                 name = self.scanner.consume()
                 c = self.scanner.peek()
                 while c.isalnum() or c == "_":
+
+                    self.column += 1
+                    self.mystr += c
+
                     name += self.scanner.consume()
                     c = self.scanner.peek()
 
@@ -389,18 +528,32 @@ class Tokenizer:
                 return Token(TokenKind.IDENTIFIER, name)
             # Number: [0-9]+
             elif c.isdigit():
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
                 value = self.scanner.consume()
                 while self.scanner.peek().isnumeric():
+                    self.column += 1
+                    self.mystr += c
                     value += self.scanner.consume()
                 return Token(TokenKind.INTEGER, int(value))
             # String
             elif c == '"':
                 string: str = ""
+
+                self.token_start = self.column
+                self.column += 1
+                self.mystr += c
+
                 self.scanner.consume()
                 c = self.scanner.peek()
                 while c != '"':
                     if 32 <= ord(c) <= 126:  # ASCII limits accepted
                         if c != "\\":
+                            self.token_start = self.column
+                            self.column += 1
+                            self.mystr += c
                             string += self.scanner.consume()
                         # Handle escape characters
                         else:
@@ -408,12 +561,25 @@ class Tokenizer:
                             c = self.scanner.peek()
                             if c == "n":
                                 string += "\n"
+
+                                self.column += 1
+                                self.mystr += "\n"
                             elif c == "t":
+
+                                self.column += 1
+                                self.mystr += "\t"
                                 string += "\t"
                             elif c == '"':
                                 string += '"'
+
+                                self.column += 1
+                                self.mystr += '"'
+
                             elif c == "\\":
                                 string += "\\"
+
+                                self.column += 1
+                                self.mystr += "\\"
                             else:
                                 print('Error: "\\{}" not recognized'.format(c))
                                 exit(1)
@@ -422,6 +588,8 @@ class Tokenizer:
                         print("Error: Unknown ASCII number {}".format(ord(c)))
                         exit(1)
                     c = self.scanner.peek()
+                self.column += 1
+                self.mystr += '"'
                 self.scanner.consume()
                 return Token(TokenKind.STRING, string)
             # End of file
@@ -432,7 +600,7 @@ class Tokenizer:
                     self.is_logical_line = False
                     return Token(TokenKind.NEWLINE, None)
                 if (
-                    self.indent_stack[-1] > 0
+                        self.indent_stack[-1] > 0
                 ):  # A dedent token is generated for the rest non-zero numbers on the stack.
                     self.indent_stack = self.indent_stack[0:-1]
                     return Token(TokenKind.DEDENT, None)
@@ -451,3 +619,14 @@ class Lexer:
 
     def consume(self) -> Token:
         return self.tokenizer.consume()
+
+    def return_row_column(self) -> List[Union[int, str]]:
+        mystr = self.tokenizer.mystr
+        c = self.tokenizer.scanner.peek()
+        while c != "\n" and c != "\r" and c:
+            print(c)
+            mystr += c
+            self.tokenizer.scanner.consume()
+
+            c = self.tokenizer.scanner.peek()
+        return [self.tokenizer.line, self.tokenizer.token_start, mystr]
