@@ -222,7 +222,6 @@ class Tokenizer:
                     self.is_new_line = True
 
                     self.change = True
-                    self.token_start = self.column
 
                     if self.is_logical_line:
                         self.is_logical_line = False
@@ -233,7 +232,6 @@ class Tokenizer:
                     self.is_new_line = True
 
                     self.change = True
-                    self.token_start = self.column
 
                     if self.is_logical_line:
                         self.is_logical_line = False
