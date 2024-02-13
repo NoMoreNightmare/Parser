@@ -596,6 +596,7 @@ class Tokenizer:
             elif not c:
                 # The end of input also serves as an implicit terminator of the physical line.
                 # For a logical line emit a newline token.
+                self.token_start = self.column
                 if self.is_logical_line:
                     self.is_logical_line = False
                     return Token(TokenKind.NEWLINE, None)

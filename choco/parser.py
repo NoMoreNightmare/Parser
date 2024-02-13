@@ -133,7 +133,6 @@ class Parser:
             return lists
         return []
 
-
     def parse_function(self) -> Operation:
         """
         Parse a function definition.
@@ -172,8 +171,8 @@ class Parser:
         self.match(TokenKind.INDENT)
 
         func_body = []
-        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(TokenKind.IDENTIFIER) or self.is_stmt_first_set():
-
+        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(
+                TokenKind.IDENTIFIER) or self.is_stmt_first_set():
             func_body: List[Operation] = self.parse_func_body()
 
         # stmt_seq = self.parse_stmt_seq()
@@ -221,11 +220,13 @@ class Parser:
 
             simple_stmt = self.parse_simple_stmt()
             if self.check(TokenKind.EQ) or self.check(TokenKind.NE) or self.check(TokenKind.LE) or \
-                            self.check(TokenKind.GE) or self.check(TokenKind.LT) or self.check(TokenKind.GT) or self.check(TokenKind.IS):
+                    self.check(TokenKind.GE) or self.check(TokenKind.LT) or self.check(TokenKind.GT) or self.check(
+                TokenKind.IS):
                 [row, column, mystr] = self.lexer.return_row_column()
-                print("SyntaxError (line", str(row) + ", column", str(column) + "): Comparison operators are not associative.")
-                print(">>>"+mystr)
-                print(">>>",end="")
+                print("SyntaxError (line", str(row) + ", column",
+                      str(column) + "): Comparison operators are not associative.")
+                print(">>>" + mystr)
+                print(">>>", end="")
                 for i in range(0, column - 1):
                     print("-", end="")
                 print("^")
@@ -234,6 +235,7 @@ class Parser:
             return simple_stmt
         elif self.check(TokenKind.IF):
             self.match(TokenKind.IF)
+            self.check_expr()
             condition = self.parse_expr()
             self.match(TokenKind.COLON)
             then = self.parse_block()
@@ -243,6 +245,7 @@ class Parser:
             return ast.If(condition, then, orelse)
         elif self.check(TokenKind.WHILE):
             self.match(TokenKind.WHILE)
+            self.check_expr()
             condition = self.parse_expr()
             self.match(TokenKind.COLON)
             body = self.parse_block()
@@ -251,6 +254,7 @@ class Parser:
             self.match(TokenKind.FOR)
             iter_name = self.match(TokenKind.IDENTIFIER)
             self.match(TokenKind.IN)
+            self.check_expr()
             iter_range = self.parse_expr()
             self.match(TokenKind.COLON)
             body = self.parse_block()
@@ -271,6 +275,7 @@ class Parser:
             # if self.check(TokenKind.IDENTIFIER):
             #     return ast.ExprName(self.match(TokenKind.IDENTIFIER).value)
             # return self.parse_literal()
+            self.check_expr()
             expr = self.parse_expr()
             if self.check(TokenKind.ASSIGN):
                 self.match(TokenKind.ASSIGN)
@@ -281,6 +286,7 @@ class Parser:
         elif self.check(TokenKind.RETURN):
             self.match(TokenKind.RETURN)
             if self.is_expr_first_set():
+                self.check_expr()
                 operation = self.parse_expr()
                 return ast.Return(operation)
             return ast.Return(None)
@@ -316,15 +322,17 @@ class Parser:
         return assignment + stmt
 
     def parse_all_variables_assignment(self) -> List[Operation]:
-        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check([TokenKind.IDENTIFIER, TokenKind.COLON]):
+        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(
+                [TokenKind.IDENTIFIER, TokenKind.COLON]):
             return self.parse_all_variables_assignment_helper()
         return []
 
     def parse_all_variables_assignment_helper(self) -> List[Operation]:
         operation = self.parse_global_or_nonlocal_or_var()
-        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check([TokenKind.IDENTIFIER, TokenKind.COLON]):
+        if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(
+                [TokenKind.IDENTIFIER, TokenKind.COLON]):
             list_operation = self.parse_all_variables_assignment_helper()
-            list_operation.insert(0,operation)
+            list_operation.insert(0, operation)
             return list_operation
         else:
             lists: List[Operation] = [operation]
@@ -406,8 +414,8 @@ class Parser:
         elif self.is_expr_first_set():
             [row, column, mystr] = self.lexer.return_row_column()
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
-            print(">>>"+mystr)
-            print(">>>",end="")
+            print(">>>" + mystr)
+            print(">>>", end="")
             for i in range(0, column - 1):
                 print("-", end="")
             print("^")
@@ -428,8 +436,8 @@ class Parser:
         elif self.is_expr_first_set():
             [row, column, mystr] = self.lexer.return_row_column()
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
-            print(">>>"+mystr)
-            print(">>>",end="")
+            print(">>>" + mystr)
+            print(">>>", end="")
             for i in range(0, column - 1):
                 print("-", end="")
             print("^")
@@ -438,7 +446,7 @@ class Parser:
             lists = [typed_var]
             return lists
 
-    def parse_return_type_opt(self) -> ast.TypeName:
+    def parse_return_type_opt(self) -> Operation:
         self.match(TokenKind.RARROW)
         return_type = self.parse_type()
         return return_type
@@ -446,21 +454,26 @@ class Parser:
     def parse_index_expr(self) -> Operation:
         value = self.parse_cexpr()
         self.match(TokenKind.LSQUAREBRACKET)
+        self.check_expr()
         index = self.parse_expr()
         self.match(TokenKind.RSQUAREBRACKET)
         return ast.IndexExpr(value, index)
 
     def parse_expr(self) -> Operation:
+        self.check_expr()
         then = self.parse_expr_first()
         if self.check(TokenKind.IF):
             self.match(TokenKind.IF)
+            self.check_expr()
             condition = self.parse_expr()
             self.match(TokenKind.ELSE)
+            self.check_expr()
             orelse = self.parse_expr()
             return ast.IfExpr(condition, then, orelse)
         return then
 
     def parse_expr_first(self) -> Operation:
+        self.check_expr()
         lhs = self.parse_expr_second()
         if self.check(TokenKind.OR):
             value = self.parse_expr_first_helper(lhs)
@@ -470,6 +483,7 @@ class Parser:
     def parse_expr_first_helper(self, lhs: Operation) -> Operation:
         if self.check(TokenKind.OR):
             or_token = self.match(TokenKind.OR)
+            self.check_expr()
             rhs = self.parse_expr_second()
             new_lhs = ast.BinaryExpr(or_token.value, lhs, rhs)
             if self.check(TokenKind.OR):
@@ -477,6 +491,7 @@ class Parser:
             return new_lhs
 
     def parse_expr_second(self) -> Operation:
+        self.check_expr()
         lhs = self.parse_expr_third()
         if self.check(TokenKind.AND):
             value = self.parse_expr_second_helper(lhs)
@@ -486,6 +501,7 @@ class Parser:
     def parse_expr_second_helper(self, lhs: Operation) -> Operation:
         if self.check(TokenKind.AND):
             and_token = self.match(TokenKind.AND)
+            self.check_expr()
             rhs = self.parse_expr_third()
             new_lhs = ast.BinaryExpr(and_token.value, lhs, rhs)
             if self.check(TokenKind.AND):
@@ -495,6 +511,7 @@ class Parser:
     def parse_expr_third(self) -> Operation:
         if self.check(TokenKind.NOT):
             not_token = self.match(TokenKind.NOT)
+            self.check_expr()
             operation = self.parse_expr_third()
             return ast.UnaryExpr(not_token.value, operation)
         return self.parse_cexpr()
@@ -502,7 +519,9 @@ class Parser:
     """
         因为比较运算符是不能像 x==y<z这样的，因此直接两边变成cexpr_first，但没考虑x==y + y==z这种情况
     """
+
     def parse_cexpr(self) -> Operation:
+        self.check_expr()
         operation = self.parse_cexpr_first()
         if self.check(TokenKind.EQ):
             eq = self.match(TokenKind.EQ)
@@ -585,6 +604,7 @@ class Parser:
     #         return ast.BinaryExpr(minus.value, operation, rhs)
     #     return operation
     def parse_cexpr_first(self) -> Operation:
+        self.check_expr()
         lhs = self.parse_cexpr_second()
         if self.check(TokenKind.PLUS) or self.check(TokenKind.MINUS):
             value = self.parse_cexpr_first_helper(lhs)
@@ -594,6 +614,7 @@ class Parser:
     def parse_cexpr_first_helper(self, lhs: Operation) -> Operation:
         if self.check(TokenKind.PLUS):
             plus = self.match(TokenKind.PLUS)
+            self.check_expr()
             rhs = self.parse_cexpr_second()
             new_lhs = ast.BinaryExpr(plus.value, lhs, rhs)
             if self.check(TokenKind.PLUS) or self.check(TokenKind.MINUS):
@@ -601,6 +622,7 @@ class Parser:
             return new_lhs
         elif self.check(TokenKind.MINUS):
             plus = self.match(TokenKind.MINUS)
+            self.check_expr()
             rhs = self.parse_cexpr_second()
             new_lhs = ast.BinaryExpr(plus.value, lhs, rhs)
             if self.check(TokenKind.PLUS) or self.check(TokenKind.MINUS):
@@ -623,6 +645,7 @@ class Parser:
     #         return ast.BinaryExpr(mod.value, operation, rhs)
     #     return operation
     def parse_cexpr_second(self) -> Operation:
+        self.check_expr()
         lhs = self.parse_cexpr_third()
         if self.check(TokenKind.MUL) or self.check(TokenKind.DIV) or self.check(TokenKind.MOD):
             return self.parse_cexpr_second_helper(lhs)
@@ -631,6 +654,7 @@ class Parser:
     def parse_cexpr_second_helper(self, lhs: Operation) -> Operation:
         if self.check(TokenKind.MUL):
             mul = self.match(TokenKind.MUL)
+            self.check_expr()
             rhs = self.parse_cexpr_third()
             new_lhs = ast.BinaryExpr(mul.value, lhs, rhs)
             if self.check(TokenKind.MUL) or self.check(TokenKind.DIV) or self.check(TokenKind.MOD):
@@ -638,6 +662,7 @@ class Parser:
             return new_lhs
         elif self.check(TokenKind.DIV):
             div = self.match(TokenKind.DIV)
+            self.check_expr()
             rhs = self.parse_cexpr_third()
             new_lhs = ast.BinaryExpr(div.value, lhs, rhs)
             if self.check(TokenKind.MUL) or self.check(TokenKind.DIV) or self.check(TokenKind.MOD):
@@ -645,6 +670,7 @@ class Parser:
             return new_lhs
         elif self.check(TokenKind.MOD):
             mod = self.match(TokenKind.MOD)
+            self.check_expr()
             rhs = self.parse_cexpr_third()
             new_lhs = ast.BinaryExpr(mod.value, lhs, rhs)
             if self.check(TokenKind.MUL) or self.check(TokenKind.DIV) or self.check(TokenKind.MOD):
@@ -652,7 +678,7 @@ class Parser:
             return new_lhs
 
     def parse_cexpr_third(self) -> Operation:
-        value : Operation = None
+        value: Operation = None
         if self.check([TokenKind.IDENTIFIER, TokenKind.LROUNDBRACKET]):
             id = self.match(TokenKind.IDENTIFIER)
             self.match(TokenKind.LROUNDBRACKET)
@@ -664,8 +690,8 @@ class Parser:
 
         elif self.check(TokenKind.IDENTIFIER):
             value = ast.ExprName(self.match(TokenKind.IDENTIFIER).value)
-        elif self.check(TokenKind.NONE) or self.check(TokenKind.TRUE) or\
-                self.check(TokenKind.FALSE) or self.check(TokenKind.INTEGER)\
+        elif self.check(TokenKind.NONE) or self.check(TokenKind.TRUE) or \
+                self.check(TokenKind.FALSE) or self.check(TokenKind.INTEGER) \
                 or self.check(TokenKind.STRING):
             value = self.parse_literal()
         elif self.check(TokenKind.LSQUAREBRACKET):
@@ -682,6 +708,7 @@ class Parser:
             self.match(TokenKind.RROUNDBRACKET)
         elif self.check(TokenKind.MINUS):
             minus = self.match(TokenKind.MINUS)
+            self.check_expr()
             operation = self.parse_cexpr_third()
             value = ast.UnaryExpr(minus.value, operation)
 
@@ -695,6 +722,7 @@ class Parser:
 
     def parse_cexpr_fourth(self) -> List[Operation]:
         self.match(TokenKind.LSQUAREBRACKET)
+        self.check_expr()
         operation = self.parse_expr()
         self.match(TokenKind.RSQUAREBRACKET)
         if self.check(TokenKind.LSQUAREBRACKET):
@@ -705,6 +733,7 @@ class Parser:
             return [operation]
 
     def parse_multi_expr_opt(self) -> List[Operation]:
+        self.check_expr()
         operation = self.parse_expr()
         if self.check(TokenKind.COMMA):
             lists = self.parse_multi_expr()
@@ -713,8 +742,8 @@ class Parser:
         elif self.is_expr_first_set():
             [row, column, mystr] = self.lexer.return_row_column()
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
-            print(">>>"+mystr)
-            print(">>>",end="")
+            print(">>>" + mystr)
+            print(">>>", end="")
             for i in range(0, column - 1):
                 print("-", end="")
             print("^")
@@ -727,6 +756,7 @@ class Parser:
 
     def parse_multi_expr_helper(self) -> List[Operation]:
         self.match(TokenKind.COMMA)
+        self.check_expr()
         operation = self.parse_expr()
         if self.check(TokenKind.COMMA):
             lists = self.parse_multi_expr_helper()
@@ -735,8 +765,8 @@ class Parser:
         elif self.is_expr_first_set():
             [row, column, mystr] = self.lexer.return_row_column()
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
-            print(">>>"+mystr)
-            print(">>>",end="")
+            print(">>>" + mystr)
+            print(">>>", end="")
             for i in range(0, column - 1):
                 print("-", end="")
             print("^")
@@ -758,6 +788,7 @@ class Parser:
     def parse_multi_elif_and_else_opt_helper(self) -> List[Operation]:
         if self.check(TokenKind.ELIF):
             self.match(TokenKind.ELIF)
+            self.check_expr()
             condition = self.parse_expr()
             self.match(TokenKind.COLON)
             then = self.parse_block()
@@ -772,6 +803,7 @@ class Parser:
             return []
 
     def parse_expr_eq_pos_helper(self) -> Operation:
+        self.check_expr()
         operation = self.parse_expr()
         if self.check(TokenKind.ASSIGN):
             self.match(TokenKind.ASSIGN)
@@ -779,8 +811,13 @@ class Parser:
             return ast.Assign(operation, value)
         return operation
 
-
-
-
-
-
+    def check_expr(self):
+        if not self.is_expr_first_set():
+            [row, column, mystr] = self.lexer.return_row_column()
+            print("SyntaxError (line", str(row) + ", column", str(column) + "): Expected expression.")
+            print(">>>" + mystr)
+            print(">>>", end="")
+            for i in range(0, column - 1):
+                print("-", end="")
+            print("^")
+            exit(0)
