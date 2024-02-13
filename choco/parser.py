@@ -177,7 +177,7 @@ class Parser:
 
         self.check_newline_error()
         self.match(TokenKind.NEWLINE)
-        self.check_indent_error()
+        self.check_func_indent_error()
         self.match(TokenKind.INDENT)
 
         func_body = []
@@ -832,7 +832,7 @@ class Parser:
     def parse_block(self) -> List[Operation]:
         self.check_newline_error()
         self.match(TokenKind.NEWLINE)
-        self.check_indent_error()
+        self.check_block_indent_error()
         self.match(TokenKind.INDENT)
         lists = self.parse_stmt_pos()
         self.match(TokenKind.DEDENT)
@@ -1003,10 +1003,21 @@ class Parser:
             print("^")
             exit(0)
 
-    def check_indent_error(self):
+    def check_block_indent_error(self):
         if not self.check(TokenKind.INDENT):
             [row, column, mystr] = self.lexer.return_row_column()
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expected at least one indented statement in block.")
+            print(">>>" + mystr)
+            print(">>>", end="")
+            for i in range(0, column - 1):
+                print("-", end="")
+            print("^")
+            exit(0)
+
+    def check_func_indent_error(self):
+        if not self.check(TokenKind.INDENT):
+            [row, column, mystr] = self.lexer.return_row_column()
+            print("SyntaxError (line", str(row) + ", column", str(column) + "): expected at least one indented statement in function.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
