@@ -995,7 +995,7 @@ class Parser:
     def check_unmatched_parenthesis(self):
         if self.check(TokenKind.RROUNDBRACKET):
             [row, column, mystr] = self.lexer.return_row_column()
-            print("SyntaxError (line", str(row) + ", column", str(column) + ": unmatched ')'.")
+            print("SyntaxError (line", str(row) + ", column", str(column) + "): unmatched ')'.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column):
@@ -1006,7 +1006,7 @@ class Parser:
     def check_indent_error(self):
         if not self.check(TokenKind.INDENT):
             [row, column, mystr] = self.lexer.return_row_column()
-            print("SyntaxError (line", str(row) + ", column", str(column) + ": expected at least one indented statement in block.")
+            print("SyntaxError (line", str(row) + ", column", str(column) + "): expected at least one indented statement in block.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
