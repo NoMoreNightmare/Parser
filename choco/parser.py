@@ -80,11 +80,14 @@ class Parser:
         :returns: The AST of a ChocoPy Program.
         """
 
+
         defs = self.parse_multi_opt_var_or_func_def()
+        self.check_unexpected_indent_error()
 
 
         stmts = self.parse_multi_stmt()
-        self.check_assign_error()
+        self.check_unexpected_indent_error()
+
 
         self.match(TokenKind.EOF)
 
@@ -107,8 +110,10 @@ class Parser:
         #     defs.append(func_def)
         #
         # return defs
+        self.check_assign_error()
         if self.check([TokenKind.IDENTIFIER, TokenKind.COLON]) or self.check(TokenKind.DEF):
             return self.parse_multi_opt_var_or_func_def_helper()
+        self.check_assign_error()
         return []
 
     def parse_multi_opt_var_or_func_def_helper(self) -> List[Operation]:
@@ -127,8 +132,10 @@ class Parser:
             return self.parse_function()
 
     def parse_multi_stmt(self) -> List[Operation]:
+        self.check_assign_error()
         if self.is_stmt_first_set():
             return self.parse_multi_stmt_helper()
+        self.check_assign_error()
         return []
 
     def parse_multi_stmt_helper(self) -> List[Operation]:
@@ -165,7 +172,6 @@ class Parser:
 
         self.check_rround()
         self.match(TokenKind.RROUNDBRACKET)
-        self.check_unmatched_parenthesis()
         return_type: Operation
         # Return type: default is <None>.
         if self.check(TokenKind.RARROW):
@@ -184,6 +190,9 @@ class Parser:
         if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(
                 TokenKind.IDENTIFIER) or self.is_stmt_first_set():
             func_body: List[Operation] = self.parse_func_body()
+            self.check_unexpected_indent_error()
+
+        self.check_assign_error()
 
         # stmt_seq = self.parse_stmt_seq()
         # if not stmt_seq:
@@ -232,7 +241,12 @@ class Parser:
             if self.check(TokenKind.EQ) or self.check(TokenKind.NE) or self.check(TokenKind.LE) or \
                     self.check(TokenKind.GE) or self.check(TokenKind.LT) or self.check(TokenKind.GT) or self.check(
                 TokenKind.IS):
-                [row, column, mystr] = self.lexer.return_row_column()
+                self.lexer.self_finish()
+                content = self.lexer.tokenizer.content
+                info = content[len(content) - 1]
+                row = info.line
+                column = info.current_token
+                mystr = info.str_at_line
                 print("SyntaxError (line", str(row) + ", column",
                       str(column) + "): Comparison operators are not associative.")
                 print(">>>" + mystr)
@@ -241,6 +255,7 @@ class Parser:
                     print("-", end="")
                 print("^")
                 exit(0)
+            self.check_unmatched_parenthesis()
             self.check_newline_error()
             self.match(TokenKind.NEWLINE)
             return simple_stmt
@@ -395,7 +410,12 @@ class Parser:
         if self.check(TokenKind.ASSIGN):
             self.match(TokenKind.ASSIGN)
         elif not self.check(TokenKind.ASSIGN):
-            [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.ASSIGN not found.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -434,7 +454,12 @@ class Parser:
 
             return ast.ListType(type_new)
         else:
-            [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): Unknown type.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -451,7 +476,12 @@ class Parser:
         if self.check(TokenKind.COMMA):
             lists = self.parse_multi_typed_var()
         elif self.is_expr_first_set():
-            [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -473,7 +503,12 @@ class Parser:
             lists.insert(0, typed_var)
             return lists
         elif self.is_expr_first_set():
-            [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -733,7 +768,6 @@ class Parser:
 
             self.check_rround()
             self.match(TokenKind.RROUNDBRACKET)
-            self.check_unmatched_parenthesis()
             value = ast.CallExpr(id.value, lists)
 
         elif self.check(TokenKind.IDENTIFIER):
@@ -757,7 +791,6 @@ class Parser:
             value = self.parse_expr()
             self.check_rround()
             self.match(TokenKind.RROUNDBRACKET)
-            self.check_unmatched_parenthesis()
         elif self.check(TokenKind.MINUS):
             minus = self.match(TokenKind.MINUS)
             self.check_expr_error()
@@ -795,7 +828,12 @@ class Parser:
             lists.insert(0, operation)
             return lists
         elif self.is_expr_first_set():
-            [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -818,7 +856,12 @@ class Parser:
             lists.insert(0, operation)
             return lists
         elif self.is_expr_first_set():
-            [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expression found, but comma expected.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -835,6 +878,7 @@ class Parser:
         self.check_block_indent_error()
         self.match(TokenKind.INDENT)
         lists = self.parse_stmt_pos()
+        self.check_unexpected_indent_error()
         self.match(TokenKind.DEDENT)
 
         return lists
@@ -1074,7 +1118,7 @@ class Parser:
             print("SyntaxError (line", str(row) + ", column", str(column) + "): unmatched ')'.")
             print(">>>" + mystr)
             print(">>>", end="")
-            for i in range(0, column):
+            for i in range(0, column - 1):
                 print("-", end="")
             print("^")
             exit(0)
@@ -1106,6 +1150,23 @@ class Parser:
             column = info.current_token
             mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expected at least one indented statement in function.")
+            print(">>>" + mystr)
+            print(">>>", end="")
+            for i in range(0, column - 1):
+                print("-", end="")
+            print("^")
+            exit(0)
+
+    def check_unexpected_indent_error(self):
+        if self.check(TokenKind.INDENT):
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
+            print("SyntaxError (line", str(row) + ", column", str(column) + "): Unexpected indentation.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
