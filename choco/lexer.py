@@ -141,6 +141,14 @@ class Scanner:
         return self.stream.read(1)
 
 
+class Content:
+    def __init__(self, line, column, current_token, str_at_line):
+        self.line = line
+        self.column = column
+        self.current_token = current_token
+        self.str_at_line = str_at_line
+
+
 class Tokenizer:
 
     def __init__(self, scanner: Scanner):
@@ -157,6 +165,12 @@ class Tokenizer:
         self.token_start = 0
         self.mystr = ''
 
+        self.content = []
+        self.has_updated_pointer = True
+
+
+        self.has_space = 0
+        self.c = ''
 
     def peek(self, k: int = 1) -> Union[Token, List[Token]]:
         """Peeks through the next `k` number of tokens.
@@ -201,17 +215,30 @@ class Tokenizer:
         c = self.scanner.peek()
 
         while True:
+            self.c = c
             if c.isspace():
                 # Tabs are replaced from left to right by one to eight spaces.
                 # The total number of spaces up to and including the replacement should be a multiple of eight.
                 if c == "\t":
+                    if not self.has_updated_pointer:
+                        self.token_start = self.column
+                        self.has_updated_pointer = True
+
                     self.column += 8
                     self.mystr += c
                     if self.is_new_line:  # We only care about padding at the beginning of line.
                         self.line_indent_lvl += 8 - self.line_indent_lvl % 8
                 elif c == "\n":  # line feed handling
+
                     self.line_indent_lvl = 0
                     self.is_new_line = True
+
+                    if not self.has_updated_pointer:
+                        self.token_start = self.column
+                        self.has_updated_pointer = True
+
+                    self.content.append(Content(self.line, self.column, self.token_start, self.mystr))
+                    self.has_updated_pointer = False
 
                     self.line += 1
                     self.column = 1
@@ -225,6 +252,13 @@ class Tokenizer:
                     self.line_indent_lvl = 0
                     self.is_new_line = True
 
+                    if not self.has_updated_pointer:
+                        self.token_start = self.column + 1
+                        self.has_updated_pointer = True
+
+                    self.content.append(Content(self.line, self.column, self.token_start, self.mystr))
+                    self.has_updated_pointer = False
+
                     self.line += 1
                     self.column = 1
                     self.mystr = ''
@@ -234,9 +268,12 @@ class Tokenizer:
                         self.scanner.consume()
                         return Token(TokenKind.NEWLINE, None)
                 else:  # Handle the rest whitespaces
-
                     self.column += 1
                     self.mystr += c
+                    if not self.has_updated_pointer:
+                        self.token_start = self.column
+                        self.has_updated_pointer = True
+
 
                     if self.is_new_line:
                         self.line_indent_lvl += 1
@@ -246,6 +283,9 @@ class Tokenizer:
             # One line comments
             # get_char() returns None in the case of EOF.
             elif c == '#':
+                self.column += 1
+                self.mystr += c
+
                 self.scanner.consume()
                 c = self.scanner.peek()
 
@@ -293,6 +333,7 @@ class Tokenizer:
                 self.token_start = self.column
                 self.column += 1
                 self.mystr += c
+                self.has_updated_pointer = False
 
                 return Token(TokenKind.PLUS, "+")
             elif c == "-":
@@ -304,6 +345,7 @@ class Tokenizer:
                     self.token_start = self.column
                     self.column += 2
                     self.mystr += c
+                    self.has_updated_pointer = False
 
                     return Token(TokenKind.RARROW, "->")
                 else:
@@ -311,6 +353,7 @@ class Tokenizer:
                     self.token_start = self.column
                     self.column += 1
                     self.mystr += "-"
+                    self.has_updated_pointer = False
 
                     return Token(TokenKind.MINUS, "-")
             elif c == "*":
@@ -320,6 +363,8 @@ class Tokenizer:
                 self.mystr += c
 
                 self.scanner.consume()
+
+                self.has_updated_pointer = False
                 return Token(TokenKind.MUL, "*")
             elif c == "%":
 
@@ -328,6 +373,7 @@ class Tokenizer:
                 self.mystr += c
 
                 self.scanner.consume()
+                self.has_updated_pointer = False
                 return Token(TokenKind.MOD, "%")
             elif c == "/":
 
@@ -340,11 +386,13 @@ class Tokenizer:
                     self.mystr += c
 
                     self.scanner.consume()
+                    self.has_updated_pointer = False
                     return Token(TokenKind.DIV, "//")
                 else:
                     self.token_start = self.column
                     self.column += 1
                     self.mystr += "/"
+                    self.has_updated_pointer = False
 
                     raise Exception("Unknown lexeme: {}".format(c))
             elif c == "=":
@@ -357,6 +405,7 @@ class Tokenizer:
                     self.mystr += c
 
                     self.scanner.consume()
+                    self.has_updated_pointer = False
                     return Token(TokenKind.EQ, "==")
                 else:
 
@@ -375,11 +424,13 @@ class Tokenizer:
                     self.mystr += c
 
                     self.scanner.consume()
+                    self.has_updated_pointer = False
                     return Token(TokenKind.NE, "!=")
                 else:
                     self.token_start = self.column
                     self.column += 1
                     self.mystr += "!"
+                    self.has_updated_pointer = False
 
                     raise Exception("Unknown lexeme: {}".format(c))
             elif c == "<":
@@ -393,12 +444,14 @@ class Tokenizer:
                     self.mystr += c
 
                     self.scanner.consume()
+                    self.has_updated_pointer = False
                     return Token(TokenKind.LE, "<=")
                 else:
 
                     self.token_start = self.column
                     self.column += 1
                     self.mystr += "<"
+                    self.has_updated_pointer = False
 
                     return Token(TokenKind.LT, "<")
             elif c == ">":
@@ -411,12 +464,14 @@ class Tokenizer:
                     self.mystr += c
 
                     self.scanner.consume()
+                    self.has_updated_pointer = False
                     return Token(TokenKind.GE, ">=")
                 else:
 
                     self.token_start = self.column
                     self.column += 1
                     self.mystr += ">"
+                    self.has_updated_pointer = False
 
                     return Token(TokenKind.GT, ">")
             elif c == "(":
@@ -426,6 +481,7 @@ class Tokenizer:
                 self.mystr += c
 
                 self.scanner.consume()
+                self.has_updated_pointer = False
                 return Token(TokenKind.LROUNDBRACKET, "(")
             elif c == ")":
 
@@ -434,6 +490,7 @@ class Tokenizer:
                 self.mystr += c
 
                 self.scanner.consume()
+                self.has_updated_pointer = False
                 return Token(TokenKind.RROUNDBRACKET, ")")
             elif c == ":":
                 self.token_start = self.column
@@ -441,6 +498,7 @@ class Tokenizer:
                 self.mystr += c
 
                 self.scanner.consume()
+                self.has_updated_pointer = False
                 return Token(TokenKind.COLON, ":")
             elif c == "[":
                 self.token_start = self.column
@@ -448,6 +506,7 @@ class Tokenizer:
                 self.mystr += c
 
                 self.scanner.consume()
+                self.has_updated_pointer = False
                 return Token(TokenKind.LSQUAREBRACKET, "[")
             elif c == "]":
                 self.token_start = self.column
@@ -455,6 +514,7 @@ class Tokenizer:
                 self.mystr += c
 
                 self.scanner.consume()
+                self.has_updated_pointer = False
                 return Token(TokenKind.RSQUAREBRACKET, "]")
             elif c == ",":
                 self.token_start = self.column
@@ -462,6 +522,7 @@ class Tokenizer:
                 self.mystr += c
 
                 self.scanner.consume()
+                self.has_updated_pointer = False
                 return Token(TokenKind.COMMA, ",")
             # Identifier: [a-zA-Z_][a-zA-Z0-9_]*
             elif c.isalpha() or c == "_":
@@ -478,6 +539,7 @@ class Tokenizer:
                     name += self.scanner.consume()
                     c = self.scanner.peek()
 
+                self.has_updated_pointer = False
                 if name == "class":
                     return Token(TokenKind.CLASS, "class")
                 if name == "def":
@@ -537,6 +599,7 @@ class Tokenizer:
                     self.column += 1
                     self.mystr += c
                     value += self.scanner.consume()
+                self.has_updated_pointer = False
                 return Token(TokenKind.INTEGER, int(value))
             # String
             elif c == '"':
@@ -591,6 +654,7 @@ class Tokenizer:
                 self.column += 1
                 self.mystr += '"'
                 self.scanner.consume()
+                self.has_updated_pointer = False
                 return Token(TokenKind.STRING, string)
             # End of file
             elif not c:
@@ -630,3 +694,15 @@ class Lexer:
 
             c = self.tokenizer.scanner.peek()
         return [self.tokenizer.line, self.tokenizer.token_start, mystr]
+
+    def self_finish(self):
+        if self.tokenizer.c != "\n":
+            mystr = self.tokenizer.mystr
+            c = self.tokenizer.scanner.peek()
+            while c != "\n" and c != "\r" and c:
+                mystr += c
+                self.tokenizer.scanner.consume()
+
+                c = self.tokenizer.scanner.peek()
+            self.tokenizer.content.append(Content(self.tokenizer.line, self.tokenizer.column, self.tokenizer.token_start, mystr))
+

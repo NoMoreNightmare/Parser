@@ -871,8 +871,18 @@ class Parser:
         return operation
 
     def check_expr_error(self):
+
+
         if not self.is_expr_first_set():
-            [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
+            # content = self.lexer.tokenizer.content
+            # for i in content:
+            #     print(i.line, i.column, i.current_token - 1, i.str_at_line)
             print("SyntaxError (line", str(row) + ", column", str(column) + "): Expected expression.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -883,7 +893,13 @@ class Parser:
 
     def check_assign_error(self):
         if self.check(TokenKind.ASSIGN):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): No left-hand side in assign statement.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -894,7 +910,13 @@ class Parser:
 
     def check_colon_error(self):
         if not self.check(TokenKind.COLON):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.COLON not found.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -906,7 +928,13 @@ class Parser:
 
     def check_else_error(self):
         if not self.check(TokenKind.ELSE):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.ELSE not found.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -917,7 +945,13 @@ class Parser:
 
     def check_global_or_nonlocal_error(self):
         if not self.check(TokenKind.IDENTIFIER):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.IDENTIFIER not found.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -928,7 +962,13 @@ class Parser:
 
     def check_in_error(self):
         if not self.check(TokenKind.IN):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.IN not found.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -939,7 +979,13 @@ class Parser:
 
     def check_lround(self):
         if not self.check(TokenKind.LROUNDBRACKET):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.LROUNDBRACKET not found.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -949,9 +995,14 @@ class Parser:
             exit(0)
 
     def check_rround(self):
-
         if not self.check(TokenKind.RROUNDBRACKET):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.RROUNDBRACKET not found.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -962,7 +1013,13 @@ class Parser:
 
     def check_newline_error(self):
         if not self.check(TokenKind.NEWLINE):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.NEWLINE not found.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -973,7 +1030,13 @@ class Parser:
 
     def check_lsqaure_error(self):
         if not self.check(TokenKind.LSQUAREBRACKET):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.LSQUAREBRACKET not found.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -983,7 +1046,13 @@ class Parser:
             exit(0)
     def check_rsqaure_error(self):
         if not self.check(TokenKind.RSQUAREBRACKET):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.RSQUAREBRACKET not found.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -995,7 +1064,13 @@ class Parser:
 
     def check_unmatched_parenthesis(self):
         if self.check(TokenKind.RROUNDBRACKET):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): unmatched ')'.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -1006,7 +1081,13 @@ class Parser:
 
     def check_block_indent_error(self):
         if not self.check(TokenKind.INDENT):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expected at least one indented statement in block.")
             print(">>>" + mystr)
             print(">>>", end="")
@@ -1017,7 +1098,13 @@ class Parser:
 
     def check_func_indent_error(self):
         if not self.check(TokenKind.INDENT):
-            [row, column, mystr] = self.lexer.return_row_column()
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): expected at least one indented statement in function.")
             print(">>>" + mystr)
             print(">>>", end="")
