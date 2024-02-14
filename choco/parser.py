@@ -353,7 +353,8 @@ class Parser:
         stmt = []
         if self.is_stmt_first_set():
             stmt = self.parse_stmt_pos()
-
+        if not stmt:
+            self.check_no_statement_error()
         return assignment + stmt
 
     def parse_all_variables_assignment(self) -> List[Operation]:
@@ -769,6 +770,7 @@ class Parser:
     def parse_cexpr_third(self) -> Operation:
         value: Operation = None
 
+        self.check_unexpected_indent_error()
         if self.check([TokenKind.IDENTIFIER, TokenKind.LROUNDBRACKET]):
             id = self.match(TokenKind.IDENTIFIER)
             self.match(TokenKind.LROUNDBRACKET)
@@ -1199,3 +1201,18 @@ class Parser:
                 print("-", end="")
             print("^")
             exit(0)
+
+    def check_no_statement_error(self):
+        self.lexer.self_finish()
+        content = self.lexer.tokenizer.content
+        info = content[len(content) - 1]
+        row = info.line
+        column = info.current_token
+        mystr = info.str_at_line
+        print("SyntaxError (line", str(row) + ", column", str(column) + "): expected at least one indented statement in function.")
+        print(">>>" + mystr)
+        print(">>>", end="")
+        for i in range(0, column - 1):
+            print("-", end="")
+        print("^")
+        exit(0)
