@@ -63,9 +63,11 @@ class Parser:
             token = self.lexer.peek()
             assert isinstance(token, Token), "A single token expected"
             self.lexer.consume()
+            print(token.kind)
             return token
 
         token = self.lexer.peek()
+        print("error",token.kind)
         assert isinstance(token, Token), "A single token expected"
         print(f"Error: token of kind {expected} not found.")
         exit(0)
@@ -82,11 +84,9 @@ class Parser:
 
 
         defs = self.parse_multi_opt_var_or_func_def()
-        self.check_unexpected_indent_error()
 
 
         stmts = self.parse_multi_stmt()
-        self.check_unexpected_indent_error()
 
 
         self.match(TokenKind.EOF)
@@ -111,13 +111,16 @@ class Parser:
         #
         # return defs
         self.check_assign_error()
+        self.check_unexpected_indent_error()
         if self.check([TokenKind.IDENTIFIER, TokenKind.COLON]) or self.check(TokenKind.DEF):
             return self.parse_multi_opt_var_or_func_def_helper()
         self.check_assign_error()
         return []
 
     def parse_multi_opt_var_or_func_def_helper(self) -> List[Operation]:
+        self.check_unexpected_indent_error()
         operation = self.parse_var_or_func()
+        self.check_unexpected_indent_error()
         if self.check([TokenKind.IDENTIFIER, TokenKind.COLON]) or self.check(TokenKind.DEF):
             lists = self.parse_multi_opt_var_or_func_def_helper()
             lists.insert(0, operation)
@@ -133,13 +136,16 @@ class Parser:
 
     def parse_multi_stmt(self) -> List[Operation]:
         self.check_assign_error()
+        self.check_unexpected_indent_error()
         if self.is_stmt_first_set():
             return self.parse_multi_stmt_helper()
         self.check_assign_error()
         return []
 
     def parse_multi_stmt_helper(self) -> List[Operation]:
+        self.check_unexpected_indent_error()
         stmt = self.parse_stmt()
+        self.check_unexpected_indent_error()
         if self.is_stmt_first_set():
             lists = self.parse_multi_stmt_helper()
             lists.insert(0, stmt)
@@ -190,7 +196,6 @@ class Parser:
         if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(
                 TokenKind.IDENTIFIER) or self.is_stmt_first_set():
             func_body: List[Operation] = self.parse_func_body()
-            self.check_unexpected_indent_error()
 
         self.check_assign_error()
 
@@ -234,7 +239,6 @@ class Parser:
         TODO: Not fully implemented.
         :return: Statement as operation
         """
-
         if self.check(TokenKind.PASS) or self.is_expr_first_set() or self.check(TokenKind.RETURN):
 
             simple_stmt = self.parse_simple_stmt()
@@ -256,6 +260,7 @@ class Parser:
                 print("^")
                 exit(0)
             self.check_unmatched_parenthesis()
+            self.check_variable_declaration_error()
             self.check_newline_error()
             self.match(TokenKind.NEWLINE)
             return simple_stmt
@@ -359,6 +364,7 @@ class Parser:
 
     def parse_all_variables_assignment_helper(self) -> List[Operation]:
         operation = self.parse_global_or_nonlocal_or_var()
+        self.check_unexpected_indent_error()
         if self.check(TokenKind.GLOBAL) or self.check(TokenKind.NONLOCAL) or self.check(
                 [TokenKind.IDENTIFIER, TokenKind.COLON]):
             list_operation = self.parse_all_variables_assignment_helper()
@@ -369,7 +375,9 @@ class Parser:
             return lists
 
     def parse_stmt_pos(self) -> List[Operation]:
+        self.check_unexpected_indent_error()
         operation = self.parse_stmt()
+        self.check_unexpected_indent_error()
         if self.is_stmt_first_set():
             lists = self.parse_stmt_pos()
             lists.insert(0, operation)
@@ -877,6 +885,7 @@ class Parser:
         self.match(TokenKind.NEWLINE)
         self.check_block_indent_error()
         self.match(TokenKind.INDENT)
+        self.check_unexpected_indent_error()
         lists = self.parse_stmt_pos()
         self.check_unexpected_indent_error()
         self.match(TokenKind.DEDENT)
@@ -1167,6 +1176,23 @@ class Parser:
             column = info.current_token
             mystr = info.str_at_line
             print("SyntaxError (line", str(row) + ", column", str(column) + "): Unexpected indentation.")
+            print(">>>" + mystr)
+            print(">>>", end="")
+            for i in range(0, column - 1):
+                print("-", end="")
+            print("^")
+            exit(0)
+
+    def check_variable_declaration_error(self):
+        if self.check(TokenKind.COLON):
+            # [row, column, mystr] = self.lexer.return_row_column()
+            self.lexer.self_finish()
+            content = self.lexer.tokenizer.content
+            info = content[len(content) - 1]
+            row = info.line
+            column = info.current_token
+            mystr = info.str_at_line
+            print("SyntaxError (line", str(row) + ", column", str(column) + "): Variable declaration after non-declaration statement.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
