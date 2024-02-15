@@ -63,11 +63,9 @@ class Parser:
             token = self.lexer.peek()
             assert isinstance(token, Token), "A single token expected"
             self.lexer.consume()
-            print(token.kind)
             return token
 
         token = self.lexer.peek()
-        print("error", token.kind)
         assert isinstance(token, Token), "A single token expected"
         print(f"Error: token of kind {expected} not found.")
         exit(0)
