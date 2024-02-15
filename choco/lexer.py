@@ -302,6 +302,7 @@ class Tokenizer:
                 continue
             # Indentation
             elif c and not c.isspace() and c != "#" and self.is_new_line:
+
                 # OK, we are in a logical line now (at least one token that is not whitespace or comment).
                 self.is_logical_line = True
                 if (

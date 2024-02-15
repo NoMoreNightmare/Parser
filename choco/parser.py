@@ -67,7 +67,7 @@ class Parser:
             return token
 
         token = self.lexer.peek()
-        print("error",token.kind)
+        print("error", token.kind)
         assert isinstance(token, Token), "A single token expected"
         print(f"Error: token of kind {expected} not found.")
         exit(0)
@@ -82,12 +82,9 @@ class Parser:
         :returns: The AST of a ChocoPy Program.
         """
 
-
         defs = self.parse_multi_opt_var_or_func_def()
 
-
         stmts = self.parse_multi_stmt()
-
 
         self.match(TokenKind.EOF)
 
@@ -111,6 +108,7 @@ class Parser:
         #
         # return defs
         self.check_assign_error()
+
         self.check_unexpected_indent_error()
         if self.check([TokenKind.IDENTIFIER, TokenKind.COLON]) or self.check(TokenKind.DEF):
             return self.parse_multi_opt_var_or_func_def_helper()
@@ -425,7 +423,8 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.ASSIGN not found.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): token of kind TokenKind.ASSIGN not found.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
@@ -815,7 +814,6 @@ class Parser:
         else:
             return value
 
-
     def parse_cexpr_fourth(self) -> List[Operation]:
         self.check_lsqaure_error()
         self.match(TokenKind.LSQUAREBRACKET)
@@ -927,7 +925,6 @@ class Parser:
 
     def check_expr_error(self):
 
-
         if not self.is_expr_first_set():
             self.lexer.self_finish()
             content = self.lexer.tokenizer.content
@@ -972,7 +969,8 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.COLON not found.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): token of kind TokenKind.COLON not found.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
@@ -990,7 +988,8 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.ELSE not found.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): token of kind TokenKind.ELSE not found.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
@@ -1007,7 +1006,8 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.IDENTIFIER not found.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): token of kind TokenKind.IDENTIFIER not found.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
@@ -1041,7 +1041,8 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.LROUNDBRACKET not found.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): token of kind TokenKind.LROUNDBRACKET not found.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
@@ -1058,7 +1059,8 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.RROUNDBRACKET not found.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): token of kind TokenKind.RROUNDBRACKET not found.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
@@ -1075,7 +1077,8 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.NEWLINE not found.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): token of kind TokenKind.NEWLINE not found.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
@@ -1092,13 +1095,15 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.LSQUAREBRACKET not found.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): token of kind TokenKind.LSQUAREBRACKET not found.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
                 print("-", end="")
             print("^")
             exit(0)
+
     def check_rsqaure_error(self):
         if not self.check(TokenKind.RSQUAREBRACKET):
             # [row, column, mystr] = self.lexer.return_row_column()
@@ -1108,14 +1113,14 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): token of kind TokenKind.RSQUAREBRACKET not found.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): token of kind TokenKind.RSQUAREBRACKET not found.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
                 print("-", end="")
             print("^")
             exit(0)
-
 
     def check_unmatched_parenthesis(self):
         if self.check(TokenKind.RROUNDBRACKET):
@@ -1143,7 +1148,8 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): expected at least one indented statement in block.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): expected at least one indented statement in block.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
@@ -1160,7 +1166,8 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): expected at least one indented statement in function.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): expected at least one indented statement in function.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
@@ -1177,12 +1184,41 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
+
+            indent = 0
+            find_indent = False
+            for i in range(len(content) - 2, -1, -1):
+                if find_indent:
+                    break
+                current_line_str = content[i].str_at_line
+                for j in range(len(current_line_str)):
+                    if current_line_str[j].isspace():
+                        if current_line_str[j] == "\t":
+                            indent += 8
+                        elif current_line_str[j] == "\n" or current_line_str[j] == "\r":
+                            indent = 0
+                            break
+                        else:
+                            indent += 1
+                    elif current_line_str[j] == '#':
+                        indent = 0
+                        break
+                    elif not current_line_str[j]:
+                        indent = 0
+                        break
+                    else:
+                        find_indent = True
+                        break
+
+            column = indent + 1
+
             print("SyntaxError (line", str(row) + ", column", str(column) + "): Unexpected indentation.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
                 print("-", end="")
             print("^")
+
             exit(0)
 
     def check_variable_declaration_error(self):
@@ -1194,7 +1230,8 @@ class Parser:
             row = info.line
             column = info.current_token
             mystr = info.str_at_line
-            print("SyntaxError (line", str(row) + ", column", str(column) + "): Variable declaration after non-declaration statement.")
+            print("SyntaxError (line", str(row) + ", column",
+                  str(column) + "): Variable declaration after non-declaration statement.")
             print(">>>" + mystr)
             print(">>>", end="")
             for i in range(0, column - 1):
@@ -1209,7 +1246,8 @@ class Parser:
         row = info.line
         column = info.current_token
         mystr = info.str_at_line
-        print("SyntaxError (line", str(row) + ", column", str(column) + "): expected at least one indented statement in function.")
+        print("SyntaxError (line", str(row) + ", column",
+              str(column) + "): expected at least one indented statement in function.")
         print(">>>" + mystr)
         print(">>>", end="")
         for i in range(0, column - 1):
